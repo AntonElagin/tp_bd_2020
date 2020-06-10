@@ -50,9 +50,14 @@ module.exports = new class ForumModel {
     }
   }
 
-  async truncateAllForums() {
+
+  async updateThreadCount(id = -1, count = 1) {
     try {
-      const data = await this._dbContext.db.none(`TRUNCATE forums CASCADE`);
+      const updateThreadsQuery = new PQ(`UPDATE forums SET 
+                threads = threads + $1
+                WHERE id = $2
+                RETURNING *`, [count, id]);
+      const data = await this._db.db.one(updateThreadsQuery);
       return {
         success: true,
         data,
@@ -65,10 +70,10 @@ module.exports = new class ForumModel {
     }
   }
 
-  async updateThreadCount(id = -1, count = 1) {
+  async updatePostsCount(id = -1, count = 1) {
     try {
       const updateThreadsQuery = new PQ(`UPDATE forums SET 
-                threads = threads + $1
+                posts = posts + $1
                 WHERE id = $2
                 RETURNING *`, [count, id]);
       const data = await this._db.db.one(updateThreadsQuery);

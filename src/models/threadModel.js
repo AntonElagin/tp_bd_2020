@@ -121,4 +121,74 @@ module.exports = new class ThreadModel {
       };
     }
   }
+
+  async updateThread(thread) {
+    try {
+      const data = await this._db.db.one(`
+        Update threads 
+        set message = $1 , title = $2
+        where id = $2
+        Returning author_nickname as author,
+        created, forum_slug as forum,
+        id, message, slug, title, votes
+      `, [
+        thread.message,
+        thread.title,
+        thread.id,
+      ]);
+
+      return {
+        success: true,
+        data,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        err,
+      };
+    }
+  }
+
+  async updatePostsCount(id = -1, count = 1) {
+    try {
+      const updateThreadsQuery = new PQ(`UPDATE threads SET 
+                posts = posts + $1
+                WHERE id = $2
+                RETURNING *`, [count, id]);
+      const data = await this._db.db.one(updateThreadsQuery);
+      return {
+        success: true,
+        data,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        err,
+      };
+    }
+  }
+
+  async updateVotesCount(thread, count = 1) {
+    try {
+      const data = await this._db.db.one(`
+        Update threads
+        SET votes = votes + $1
+        where id = $2
+        returning *
+      `, [
+        count,
+        thread.id,
+      ]);
+
+      return {
+        success: true,
+        data,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        err,
+      };
+    }
+  }
 };

@@ -79,7 +79,11 @@ class ForumController {
       return resp.status(409).json(thread.data);
     }
 
-    const threadCreated = await Threads.createThread(threadData, forum.data, user.data);
+    const threadCreated = await Threads.createThread(
+        threadData,
+        forum.data,
+        user.data,
+    );
 
     if (threadCreated.success) {
       const userAddedToForum = await Forums.addUserToForum(user, forum);
@@ -108,6 +112,26 @@ class ForumController {
     const threads = await Threads.getForumThreads(forum.data, getParams);
     if (threads.success) {
       return resp.status(200).json(threads.data);
+    }
+
+    return resp.status(500);
+  }
+
+  static async getUsersOfForum(req, resp) {
+    const getParams = req.query;
+    const slug = req.params.slug;
+
+    const forumExist = await Forums.getForumDetails(slug);
+
+    if (forumExist.success && !forumExist.data) {
+      return resp.status(404).json({
+        message: `Can't find forum with slug '${slug}'\n`,
+      });
+    }
+
+    const users = await Users.getUsersByForum(forumExist.data, getParams);
+    if (users.success) {
+      return resp.status(200).json(users.data);
     }
 
     return resp.status(500);

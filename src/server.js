@@ -12,11 +12,11 @@ const serviceRouter = require('./routes/serviceRouter');
 app.use(logger('dev'));
 app.use(express.json());
 
-app.use('/user', userRouter);
-app.use('/forum', forumRouter);
-app.use('/thread', threadRouter);
-app.use('/post', postRouter);
-app.use('/service', serviceRouter);
+app.use('/api/user', userRouter);
+app.use('/api/forum', forumRouter);
+app.use('/api/thread', threadRouter);
+app.use('/api/post', postRouter);
+app.use('/api/service', serviceRouter);
 
 const port = process.env.PORT || 5000;
 app.listen(

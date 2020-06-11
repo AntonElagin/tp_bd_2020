@@ -15,8 +15,8 @@ app.use(express.json());
 app.use('/user', userRouter);
 app.use('/forum', forumRouter);
 app.use('/thread', threadRouter);
-app.use('/api/post', postRouter);
-app.use('/api/service', serviceRouter);
+app.use('/post', postRouter);
+app.use('/service', serviceRouter);
 
 const port = process.env.PORT || 5000;
 app.listen(

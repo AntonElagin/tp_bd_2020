@@ -1,5 +1,4 @@
 const db = require('../modules/db-config');
-const PQ = require('pg-promise').ParameterizedQuery;
 
 module.exports = new class ThreadModel {
   constructor() {
@@ -9,13 +8,13 @@ module.exports = new class ThreadModel {
   async createThread(threadData = {}, forumData = {}, userData= {}) {
     {
       try {
-        const createForumQuery = new PQ(`INSERT INTO threads (
+        const data = await this._db.db.one(`INSERT INTO threads (
           slug, author_id, author_nickname, forum_id, forum_slug, 
           created, title, message) 
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
           RETURNING author_nickname as author, created, forum_slug as forum,
-          id, message, title, votes;`);
-        createForumQuery.values = [
+          id, message, title, slug;`,
+        [
           threadData.slug,
           userData.id,
           userData.nickname,
@@ -24,14 +23,13 @@ module.exports = new class ThreadModel {
           threadData.created,
           threadData.title,
           threadData.message,
-        ];
-        const data = await this._db.db.one(createForumQuery);
+        ]);
         return {
           success: true,
           data,
         };
       } catch (err) {
-        console.warn('DB error:', err);
+        console.warn('Create Thread error:', err);
         return {
           success: false,
           err,
@@ -40,7 +38,7 @@ module.exports = new class ThreadModel {
     }
   }
 
-  async getThreadBySlugOrId(slug= '', id = -1) {
+  async getThreadBySlugOrId(slug = '', id = -1) {
     try {
       const data = await this._db.db.oneOrNone(`
     Select * from threads
@@ -55,6 +53,32 @@ module.exports = new class ThreadModel {
         data,
       };
     } catch (err) {
+      console.warn('get thread by slug or id error:\n', err);
+
+      return {
+        success: false,
+        err,
+      };
+    }
+  }
+
+
+  async getThreadBySlug(slug = '') {
+    try {
+      const data = await this._db.db.oneOrNone(`
+    Select * from threads
+    where slug = $1;
+    `,
+      [
+        slug,
+      ]);
+      return {
+        success: true,
+        data,
+      };
+    } catch (err) {
+      console.warn('get thread by slug or id error:', err);
+
       return {
         success: false,
         err,
@@ -73,9 +97,11 @@ module.exports = new class ThreadModel {
       let data;
       if (since) {
         if (desc) {
-          data = await this._db.db.many(`
-          Select * from threads
-          where forum_id = $1 and created >= $2
+          data = await this._db.db.manyOrNone(`
+          Select created, id, message, slug, title ,
+          author_nickname as author, forum_slug as forum
+          from threads
+          where forum_id = $1 and created <= $2
           order by created DESC
           limit $3
         `,
@@ -85,9 +111,11 @@ module.exports = new class ThreadModel {
             limit,
           ]);
         } else {
-          data = await this._db.db.many(`
-          Select * from threads
-          where forum_id = $1 and created <= $2
+          data = await this._db.db.manyOrNone(`
+          Select created, id, message, slug, title ,
+          author_nickname as author, forum_slug as forum
+          from threads
+          where forum_id = $1 and created >= $2
           order by created ASC
           limit $3
         `,
@@ -98,8 +126,10 @@ module.exports = new class ThreadModel {
           ]);
         }
       } else {
-        data = await this._db.db.many(`
-          Select * from threads
+        data = await this._db.db.manyOrNone(`
+          Select created, id, message, slug, title ,
+          author_nickname as author, forum_slug as forum
+          from threads
           where forum_id = $1
           order by created $2:raw
           limit $3
@@ -109,12 +139,14 @@ module.exports = new class ThreadModel {
           (desc)? 'DESC': 'ASC',
           limit,
         ]);
-        return {
-          success: true,
-          data,
-        };
       }
+      return {
+        success: true,
+        data,
+      };
     } catch (err) {
+      console.warn('get forum Thread error:', err);
+
       return {
         success: false,
         err,
@@ -122,26 +154,35 @@ module.exports = new class ThreadModel {
     }
   }
 
-  async updateThread(thread) {
+  async updateThread(id, thread) {
     try {
-      const data = await this._db.db.one(`
-        Update threads 
-        set message = $1 , title = $2
-        where id = $2
-        Returning author_nickname as author,
-        created, forum_slug as forum,
-        id, message, slug, title, votes
-      `, [
-        thread.message,
-        thread.title,
-        thread.id,
-      ]);
+      // const data = await this._db.db.one(`
+      //   Update threads
+      //   set message = $1 , title = $2
+      //   where id = $3
+      //   Returning *
+      // `, [
+      //   thread.message,
+      //   thread.title,
+      //   thread.id,
+      // ]);
 
+      const condition = this._db.pgp.as.format(
+          ' WHERE id = $1 Returning *',
+          [
+            id,
+          ],
+      );
+      const updateUserQuery = this._db.pgp.helpers
+          .update(thread, null, 'threads') + condition;
+      const data = await this._db.db.one(updateUserQuery);
       return {
         success: true,
         data,
       };
     } catch (err) {
+      console.warn('update Thread error:', err);
+
       return {
         success: false,
         err,
@@ -151,16 +192,17 @@ module.exports = new class ThreadModel {
 
   async updatePostsCount(id = -1, count = 1) {
     try {
-      const updateThreadsQuery = new PQ(`UPDATE threads SET 
-                posts = posts + $1
-                WHERE id = $2
-                RETURNING *`, [count, id]);
-      const data = await this._db.db.one(updateThreadsQuery);
+      const data = await this._db.db.one(`UPDATE threads SET 
+      posts = posts + $1
+      WHERE id = $2
+      RETURNING *`, [count, id]);
       return {
         success: true,
         data,
       };
     } catch (err) {
+      console.warn('update post count error:', err);
+
       return {
         success: false,
         err,
@@ -172,7 +214,7 @@ module.exports = new class ThreadModel {
     try {
       const data = await this._db.db.one(`
         Update threads
-        SET votes = votes + $1
+        SET votes = $1
         where id = $2
         returning *
       `, [
@@ -185,6 +227,8 @@ module.exports = new class ThreadModel {
         data,
       };
     } catch (err) {
+      console.warn('update votes count error:', err);
+
       return {
         success: false,
         err,

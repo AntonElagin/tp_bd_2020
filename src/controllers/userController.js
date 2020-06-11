@@ -24,7 +24,7 @@ class UserController {
         userData.email,
     );
 
-    if (createdUser.success && createdUser.data) {
+    if (createdUser.success && createdUser.data.length > 0) {
       return resp.status(409).json(createdUser.data);
     }
 
@@ -32,12 +32,13 @@ class UserController {
     if (newUser.success) {
       return resp.status(201).json(newUser.data);
     }
-    return resp.status(500);
+    return resp.status(500).end();
   }
 
   static async updateUser(req, resp) {
     const nickname = req.params.nickname;
     const userData = req.body;
+
 
     const userExist = await Users.getUserInfo(nickname);
     if (!(userExist.success && userExist.data)) {
@@ -46,12 +47,23 @@ class UserController {
       });
     }
 
+    console.log(userData);
+    if (Object.keys(userData).length === 0) {
+      return resp.status(200).json({
+        about: userExist.data.about,
+        email: userExist.data.email,
+        fullname: userExist.data.fullname,
+        nickname: userExist.data.nickname,
+      });
+    }
+
+
     const conflictData = await Users.getUserByNicknameOrEmail(
         userData.nickname,
         userData.email,
     );
 
-    if (conflictData.success && conflictData.data) {
+    if (conflictData.success && conflictData.data.length > 0) {
       return resp.status(409).json({
         message: 'Data conflict',
       });
@@ -63,10 +75,10 @@ class UserController {
     );
 
     if (updatedUser.success) {
-      return resp.status(200).json(updatedUser);
+      return resp.status(200).json(updatedUser.data);
     }
 
-    return resp.status(500);
+    return resp.status(500).end();
   }
 }
 

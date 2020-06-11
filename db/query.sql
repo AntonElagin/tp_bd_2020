@@ -139,3 +139,50 @@ EACH
 ROW
 EXECUTE PROCEDURE add_path_to_post
 ();
+
+
+CREATE FUNCTION fn_update_thread_votes_ins()
+    RETURNS TRIGGER AS '
+    BEGIN
+        UPDATE threads
+        SET
+            votes = votes + NEW.voice
+        WHERE id = NEW.thread;
+        RETURN NULL;
+    END;
+' LANGUAGE plpgsql;
+
+
+CREATE TRIGGER on_vote_insert
+    AFTER
+INSERT ON
+votes
+FOR
+EACH
+ROW
+EXECUTE PROCEDURE fn_update_thread_votes_ins
+();
+
+CREATE FUNCTION fn_update_thread_votes_upd()
+    RETURNS TRIGGER AS '
+    BEGIN
+        IF OLD.voice = NEW.voice
+        THEN
+            RETURN NULL;
+        END IF;
+        UPDATE threads
+        SET
+            votes = votes + CASE WHEN NEW.voice = -1
+                                     THEN -2
+                                 ELSE 2 END
+        WHERE id = NEW.thread;
+        RETURN NULL;
+    END;
+' LANGUAGE plpgsql;
+
+CREATE TRIGGER on_vote_update
+    AFTER
+UPDATE ON votes
+    FOR EACH ROW
+EXECUTE PROCEDURE fn_update_thread_votes_upd
+();

@@ -35,7 +35,7 @@ class ForumController {
       });
     }
 
-    return resp.status(500);
+    return resp.status(500).end();
   }
 
   static async getForumDetails(req, res) {
@@ -49,10 +49,11 @@ class ForumController {
     }
 
     res.json({
-      slug: forumExist.slug,
-      title: forumExist.title,
-      user: forumExist.user_nickname,
-      posts: forumExist.posts, threads: forumExist.threads,
+      slug: forumExist.data.slug,
+      title: forumExist.data.title,
+      user: forumExist.data.user_nickname,
+      posts: forumExist.data.posts,
+      threads: forumExist.data.threads,
     });
   }
 
@@ -61,22 +62,35 @@ class ForumController {
     const threadData = req.body;
 
     const user = await Users.getUserInfo(threadData.author);
+    console.log(user);
     if (!(user.success && user.data)) {
-      return resp.status(500);
+      return resp.status(500).status(404).json({
+        message: `Can't find user with nickname ${threadData.author}\n`,
+      });
     }
 
     const forum = await Forums.getForumDetails(slug);
 
+    console.log(forum);
     if (forum.success && !forum.data) {
       return resp.status(404).json({
         message: `Can't find forum with slug ${slug}\n`,
       });
     }
 
-    const thread = await Threads.getThreadBySlugOrId(slug);
+    const thread = await Threads.getThreadBySlug(threadData.slug);
 
+    console.log(thread);
     if (thread.success && thread.data) {
-      return resp.status(409).json(thread.data);
+      return resp.status(409).json({
+        author: thread.data.author_nickname,
+        created: thread.data.created,
+        forum: thread.data.forum_slug,
+        id: +thread.data.id,
+        message: thread.data.message,
+        slug: thread.data.slug,
+        title: thread.data.title,
+      });
     }
 
     const threadCreated = await Threads.createThread(
@@ -86,19 +100,25 @@ class ForumController {
     );
 
     if (threadCreated.success) {
-      const userAddedToForum = await Forums.addUserToForum(user, forum);
-      const threadAddedToForumCount = await Forums.updateThreadCount(forum.id);
+      const userAddedToForum =
+        await Forums.addUserToForum(user.data, forum.data);
+      const threadAddedToForumCount =
+        await Forums.updateThreadCount(forum.data.id);
 
       if (userAddedToForum.success && threadAddedToForumCount.success) {
+        threadCreated.data.id = +threadCreated.data.id;
         return resp.status(201).json(threadCreated.data);
       }
     }
 
-    return resp.status(500);
+    return resp.status(500).end();
   }
 
   static async getForumThreads(req, resp) {
     const getParams = req.query;
+    if (getParams.desc) {
+      getParams.desc = getParams.desc === 'true';
+    }
     const slug = req.params.slug;
 
     const forum = await Forums.getForumDetails(slug);
@@ -111,14 +131,18 @@ class ForumController {
 
     const threads = await Threads.getForumThreads(forum.data, getParams);
     if (threads.success) {
-      return resp.status(200).json(threads.data);
+      return resp.status(200).json(threads.data.map((elem) => {
+        elem.id = +elem.id;
+        return elem;
+      }));
     }
 
-    return resp.status(500);
+    return resp.status(500).end();
   }
 
   static async getUsersOfForum(req, resp) {
     const getParams = req.query;
+    getParams.desc = getParams.desc === 'true';
     const slug = req.params.slug;
 
     const forumExist = await Forums.getForumDetails(slug);
@@ -131,10 +155,10 @@ class ForumController {
 
     const users = await Users.getUsersByForum(forumExist.data, getParams);
     if (users.success) {
-      return resp.status(200).json(users.data);
+      return resp.status(200).json(users.data || []);
     }
 
-    return resp.status(500);
+    return resp.status(500).end();
   }
 }
 

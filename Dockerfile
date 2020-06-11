@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 
 MAINTAINER Elagin Anton
 
@@ -8,7 +8,7 @@ RUN apt-get -y update
 #
 # Установка postgresql
 #
-ENV PGVER 9.5
+ENV PGVER 10
 RUN apt-get install -y postgresql-$PGVER
 
 # Run the rest of the commands as the ``postgres`` user created by the ``postgres-$PGVER`` package when it was ``apt-get installed``

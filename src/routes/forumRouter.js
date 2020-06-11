@@ -1,5 +1,5 @@
 const express = require('express');
-const forumRouter = express();
+const forumRouter = express.Router();
 const forumController = require('../controllers/forumController');
 
 

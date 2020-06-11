@@ -17,22 +17,47 @@ class PostController {
       });
     }
 
+    if (!message) {
+      return resp.status(200).json({
+        author: postExist.data.author_nickname,
+        created: postExist.data.created,
+        forum: postExist.data.forum_slug,
+        id: +postExist.data.id,
+        message: postExist.data.message,
+        thread: +postExist.data.thread_id,
+      });
+    }
+
     const updatedPost = await Posts.updatePostMessage(id, message);
 
     if (updatedPost.success) {
-      return resp.status(200).json(updatedPost.data);
+      if (updatedPost.data) {
+        updatedPost.data.id = +updatedPost.data.id;
+        updatedPost.data.thread = +updatedPost.data.thread;
+        return resp.status(200).json(updatedPost.data);
+      }
+      return resp.status(200).json({
+        author: postExist.data.author_nickname,
+        created: postExist.data.created,
+        forum: postExist.data.forum_slug,
+        id: +postExist.data.id,
+        message: postExist.data.message,
+        thread: +postExist.data.thread_id,
+      });
     }
-    return resp.status(500);
+    return resp.status(500).end();
   }
 
   static async getPostDetails(req, resp) {
     const id = req.params.id;
-    const related = req.query.related;
+    let related = req.query.related ? req.query.related.split(',') : [];
+    related = (Array.isArray(related)) ? related: [related];
+
 
     const postExist = await Posts.getPostById(id);
 
     if (!postExist.success) {
-      return resp.status(500);
+      return resp.status(500).end();
     }
 
     if (!postExist.data) {
@@ -45,21 +70,23 @@ class PostController {
         author: postExist.data.author_nickname,
         created: postExist.data.created,
         forum: postExist.data.forum_slug,
-        id: postExist.data.id,
-        isEdited: postExist.data.isEdited,
+        id: +postExist.data.id,
+        isEdited: postExist.data.isedited,
         message: postExist.data.message,
-        parent: postExist.data.parent,
-        thread: postExist.data.thread_id,
+        // parent: postExist.data.parent,
+        thread: +postExist.data.thread_id,
       },
     };
+
+
     if (related) {
       for (const obj of related) {
         switch (obj) {
-          case 'author':
-            const author = await Users.getUserInfo(returnObj.author);
+          case 'user':
+            const author = await Users.getUserInfo(returnObj.post.author);
 
             if (!author.success) {
-              return resp.status(500);
+              return resp.status(500).end();
             }
 
             returnObj.author = {
@@ -70,10 +97,10 @@ class PostController {
             };
             break;
           case 'forum':
-            const forum = await Forums.getForumDetails(returnObj.forum_slug);
+            const forum = await Forums.getForumDetails(returnObj.post.forum);
 
             if (!forum.success) {
-              return resp.status(500);
+              return resp.status(500).end();
             }
 
             returnObj.forum = {
@@ -86,21 +113,21 @@ class PostController {
             break;
           case 'thread':
             const thread =
-              await Threads.getThreadBySlugOrId(returnObj.thread_slug);
+              await Threads.getThreadBySlug(postExist.data.thread_slug);
 
             if (!thread.success) {
-              return resp.status(500);
+              return resp.status(500).end();
             }
 
-            returnObj.threads = {
+            returnObj.thread = {
               author: thread.data.author_nickname,
               created: thread.data.created,
               forum: thread.data.forum_slug,
-              id: thread.data.id,
+              id: +thread.data.id,
               slug: thread.data.slug,
               message: thread.data.message,
               title: thread.data.title,
-              votes: thread.data.votes,
+              votes: +thread.data.votes,
             };
             break;
         }

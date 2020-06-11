@@ -3,18 +3,20 @@ const logger = require('morgan');
 
 const app = express();
 
-const userRouter = require('./routes/userRoutes');
+const userRouter = require('./routes/userRouter');
 const forumRouter = require('./routes/forumRouter');
+const threadRouter = require('./routes/threadRouter');
+const postRouter = require('./routes/postRouter');
+const serviceRouter = require('./routes/serviceRouter');
 
 app.use(logger('dev'));
 app.use(express.json());
 
-// app.use('/api/', indexRouter);
 app.use('/user', userRouter);
 app.use('/forum', forumRouter);
-// app.use('/api/thread', threadsRouter);
-// app.use('/api/post', postsRouter);
-// app.use('/api/service', serviceRouter);
+app.use('/thread', threadRouter);
+app.use('/post', postRouter);
+app.use('/service', serviceRouter);
 
 const port = process.env.PORT || 5000;
 app.listen(

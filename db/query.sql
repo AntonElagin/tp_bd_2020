@@ -24,6 +24,8 @@ IF NOT EXISTS users
     email       CITEXT      UNIQUE
 );
 
+
+
 CREATE UNIQUE INDEX
 IF NOT EXISTS index_users_email
     ON users
@@ -36,6 +38,8 @@ CREATE INDEX
 IF NOT EXISTS index_users_all
     ON users
 (nickname, email, about, fullname);
+
+
 
 CREATE TABLE
 IF NOT EXISTS forums
@@ -50,6 +54,10 @@ IF NOT EXISTS forums
     posts           INTEGER     DEFAULT 0,
     threads         INTEGER     DEFAULT 0
 );
+
+CREATE INDEX
+IF NOT EXISTS index_forums_slug ON forums
+(slug);
 
 CREATE TABLE
 IF NOT EXISTS threads
@@ -71,6 +79,14 @@ WITH TIME ZONE    DEFAULT NOW
     message         VARCHAR                     NOT NULL,
     votes           INTEGER                     DEFAULT 0
 );
+
+CREATE INDEX
+IF NOT EXISTS index_threads_slug ON threads
+(slug);
+CREATE INDEX
+IF NOT EXISTS index_threads_id ON threads
+(id);
+
 
 CREATE TABLE
 IF NOT EXISTS posts
@@ -111,6 +127,10 @@ IF NOT EXISTS votes
 (nickname, thread)
 );
 
+CREATE INDEX
+IF NOT EXISTS index_votes_double ON votes
+(nickname, thread);
+
 CREATE TABLE
 IF NOT EXISTS forum_users
 (
@@ -121,6 +141,10 @@ IF NOT EXISTS forum_users
 	CONSTRAINT unique_user_in_forum UNIQUE
 (user_id, forum_id)
 );
+
+CREATE INDEX
+IF NOT EXISTS index_forum_users_double ON votes
+(forum_id, user_id);
 
 CREATE OR REPLACE FUNCTION add_path_to_post
 () RETURNS TRIGGER AS $add_path_to_post$

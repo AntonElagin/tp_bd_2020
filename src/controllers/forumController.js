@@ -6,26 +6,51 @@ class ForumController {
   static async createForum(req, resp) {
     const forumData = req.body;
 
-    const userExist = await Users.getUserInfo(forumData.user);
+    const checked = await Forums.checkForumAndUser(
+        forumData.slug,
+        forumData.user,
+    );
 
-    if ((userExist.success && !userExist.data)) {
+    if (!checked.success) {
+      return resp.status(500);
+    }
+
+    const user = checked.data.user;
+    const forum = checked.data.forum;
+
+    if (!user) {
       return resp.status(404).json({
         message: `Can't find user with nickname '${forumData.nickname}'\n`,
       });
     }
-    const userData = userExist.data;
 
-    const forumExist = await Forums.getForumDetails(forumData.slug);
-
-    if (forumExist.success && forumExist.data) {
+    if (forum) {
       return resp.status(409).json({
-        slug: forumExist.data.slug,
-        title: forumExist.data.title,
-        user: forumExist.data.user_nickname,
+        slug: forum.slug,
+        title: forum.title,
+        user: forum.user_nickname,
       });
     }
+    // const userExist = await Users.getUserInfo(forumData.user);
 
-    const createdForum = await Forums.createForum(forumData, userData);
+    // if ((userExist.success && !userExist.data)) {
+    //   return resp.status(404).json({
+    //     message: `Can't find user with nickname '${forumData.nickname}'\n`,
+    //   });
+    // }
+    // const userData = userExist.data;
+
+    // const forumExist = await Forums.getForumDetails(forumData.slug);
+
+    // if (forumExist.success && forumExist.data) {
+    //   return resp.status(409).json({
+    //     slug: forumExist.data.slug,
+    //     title: forumExist.data.title,
+    //     user: forumExist.data.user_nickname,
+    //   });
+    // }
+
+    const createdForum = await Forums.createForum(forumData, user);
 
     if (createdForum.success) {
       return resp.status(201).json({

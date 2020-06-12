@@ -57,6 +57,40 @@ module.exports = new class ForumModel {
   }
 
 
+  async checkForumAndUser(forumSlug = '', nickname = '') {
+    try {
+      const data = await this._db.db.multi(`
+      Select * from users
+      where nickname = $2;
+      Select * 
+      from forums
+      where slug = $1;
+      `, [
+        forumSlug,
+        nickname,
+      ]);
+      return {
+        success: true,
+        data: {
+          user: data[0][0],
+          forum: data[1][0],
+        },
+      };
+    } catch (err) {
+      console.error(`
+      [Forums] Get forum details error:
+      ${err.message}
+      `);
+
+
+      return {
+        success: false,
+        err,
+      };
+    }
+  }
+
+
   async updateThreadCount(id = -1, count = 1) {
     try {
       const data = await this._db.db.oneOrNone(`UPDATE forums SET 

@@ -24,6 +24,19 @@ IF NOT EXISTS users
     email       CITEXT      UNIQUE
 );
 
+CREATE UNIQUE INDEX
+IF NOT EXISTS index_users_email
+    ON users
+(email);
+CREATE UNIQUE INDEX
+IF NOT EXISTS index_users_nickname
+    ON users
+(nickname);
+CREATE INDEX
+IF NOT EXISTS index_users_all
+    ON users
+(nickname, email, about, fullname);
+
 CREATE TABLE
 IF NOT EXISTS forums
 (
@@ -189,5 +202,5 @@ EXECUTE PROCEDURE fn_update_thread_votes_upd
 
 
 CREATE INDEX
-IF NOT EXISTS idx_posts_path_to_this_post ON posts USING GIN
+IF NOT EXISTS index_posts_path_to_this_post ON posts USING GIN
 (path_to_this_post);

@@ -47,7 +47,6 @@ class UserController {
       });
     }
 
-    console.log(userData);
     if (Object.keys(userData).length === 0) {
       return resp.status(200).json({
         about: userExist.data.about,

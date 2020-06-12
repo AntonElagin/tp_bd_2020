@@ -29,7 +29,10 @@ module.exports = new class ThreadModel {
           data,
         };
       } catch (err) {
-        console.warn('Create Thread error:', err);
+        console.error(`
+      [Threads] Create thread error:
+      ${err.message}
+      `);
         return {
           success: false,
           err,
@@ -53,8 +56,10 @@ module.exports = new class ThreadModel {
         data,
       };
     } catch (err) {
-      console.warn('get thread by slug or id error:\n', err);
-
+      console.error(`
+      [Threads] Get thread by slug or id error:
+      ${err.message}
+      `);
       return {
         success: false,
         err,
@@ -77,7 +82,10 @@ module.exports = new class ThreadModel {
         data,
       };
     } catch (err) {
-      console.warn('get thread by slug or id error:', err);
+      console.error(`
+      [Threads] Get thread by slug error:
+      ${err.message}
+      `);
 
       return {
         success: false,
@@ -145,7 +153,10 @@ module.exports = new class ThreadModel {
         data,
       };
     } catch (err) {
-      console.warn('get forum Thread error:', err);
+      console.error(`
+      [Threads] Get threads of forum error:
+      ${err.message}
+      `);
 
       return {
         success: false,
@@ -181,7 +192,10 @@ module.exports = new class ThreadModel {
         data,
       };
     } catch (err) {
-      console.warn('update Thread error:', err);
+      console.error(`
+      [Threads] update thread error:
+      ${err.message}
+      `);
 
       return {
         success: false,
@@ -201,7 +215,10 @@ module.exports = new class ThreadModel {
         data,
       };
     } catch (err) {
-      console.warn('update post count error:', err);
+      console.error(`
+      [Threads] Update post count of thread error:
+      ${err.message}
+      `);
 
       return {
         success: false,
@@ -227,7 +244,10 @@ module.exports = new class ThreadModel {
         data,
       };
     } catch (err) {
-      console.warn('update votes count error:', err);
+      console.error(`
+      [Threads] Update votes count or thread error:
+      ${err.message}
+      `);
 
       return {
         success: false,

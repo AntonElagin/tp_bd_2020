@@ -15,6 +15,10 @@ module.exports = new class ServiceModel {
         data,
       };
     } catch (err) {
+      console.error(`
+      [Service] delete all error:
+      ${err.message}
+      `);
       return {
         success: false,
         err,
@@ -30,7 +34,6 @@ module.exports = new class ServiceModel {
       Select count(*) as "threads" from threads;
       Select count(*) as "posts" from posts;
       `);
-      console.log(data);
       return {
         success: true,
         data: {
@@ -41,7 +44,10 @@ module.exports = new class ServiceModel {
         },
       };
     } catch (err) {
-      console.log(`get Info error:\n\n${err.message}\n`);
+      console.error(`
+      [Service] Get stat error:
+      ${err.message}
+      `);
       return {
         success: false,
         err,

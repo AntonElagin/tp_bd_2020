@@ -100,7 +100,6 @@ class ThreadController {
             threadExist.data,
         );
 
-        console.log(postParent.data);
         if (postParent.success && !postParent.data) {
           return resp.status(409).json({
             message: `Can't find parent post with id '${post.parent}'`,
@@ -114,7 +113,7 @@ class ThreadController {
       }
     }
 
-
+    const authorSet = new Set();
     const addUsersList = [];
     for (const post of posts) {
       const author = await Users.getUserInfo(post.author);
@@ -125,10 +124,14 @@ class ThreadController {
         });
       }
 
-      addUsersList.push({
-        forum_id: threadExist.data.forum_id,
-        user_id: author.data.id,
-      });
+      if (!authorSet.has(author.data.nickname)) {
+        addUsersList.push({
+          forum_id: threadExist.data.forum_id,
+          user_id: author.data.id,
+        });
+
+        authorSet.add(author.data.nickname);
+      }
       post.created = created;
       post.author_id = author.data.id;
       post.author_nickname = author.data.nickname;
@@ -137,27 +140,6 @@ class ThreadController {
       post.thread_id = threadExist.data.id;
       post.thread_slug = threadExist.data.slug;
       post.parent = post.parent || null;
-
-      // returnList.push({
-      // id: +postData.id,
-      // slug: postData.slug,
-      // author: postData.author_nickname,
-      // forum: postData.forum_slug,
-      // created: postData.created,
-      // thread: +postData.thread_id,
-      // title: postData.title,
-      // message: postData.message,
-      // parent: +postData.parent,
-      // });
-
-
-      // const addedToForum = await Forums.addUserToForum(author.data, {
-      //   id: threadExist.data.forum_id,
-      // });
-
-      // if (!addedToForum.success) {
-      //   return resp.status(500).end();
-      // }
     }
 
     const postsInsert = await Posts.createPosts(posts);
@@ -271,25 +253,6 @@ class ThreadController {
       return resp.status(500).end();
     }
 
-    // console.log(voteUpdated.data);
-    // if (!voteUpdated.data) {
-    //   console.log('kek\n\n');
-    //   console.log(threadExist.data.votes + '\n\n');
-    //   console.log(threadTemplate(threadExist.data).votes + '\n\n');
-    //   return resp.status(200).json(threadTemplate(threadExist.data));
-    // }
-
-    // const threadUpdated = await Threads.updateVotesCount(
-    //     threadExist.data,
-    //     voteUpdated.data,
-    // );
-
-    // if (!threadUpdated.success) {
-    //   return resp.status(500).end();
-    // }
-
-    // console.log(threadUpdated.data);
-    // console.log(threadTemplate(threadUpdated.data));
 
     return resp.status(200).json(threadTemplate(voteUpdated.data));
   }
@@ -337,8 +300,6 @@ class ThreadController {
         break;
       case 'flat':
       default:
-        console.log(threadExist.id);
-        console.log(getParams);
         posts = await Posts.getPostsbytThreadWithFlatSort(
             threadExist.data.id,
             getParams,
@@ -349,7 +310,6 @@ class ThreadController {
       return resp.status(500).end();
     }
 
-    console.log(posts);
     if (posts.data && posts.data.length === 0 ) {
       return resp.status(200).json([]);
     }

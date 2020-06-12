@@ -62,7 +62,6 @@ class ForumController {
     const threadData = req.body;
 
     const user = await Users.getUserInfo(threadData.author);
-    console.log(user);
     if (!(user.success && user.data)) {
       return resp.status(500).status(404).json({
         message: `Can't find user with nickname ${threadData.author}\n`,
@@ -71,7 +70,6 @@ class ForumController {
 
     const forum = await Forums.getForumDetails(slug);
 
-    console.log(forum);
     if (forum.success && !forum.data) {
       return resp.status(404).json({
         message: `Can't find forum with slug ${slug}\n`,
@@ -80,7 +78,6 @@ class ForumController {
 
     const thread = await Threads.getThreadBySlug(threadData.slug);
 
-    console.log(thread);
     if (thread.success && thread.data) {
       return resp.status(409).json({
         author: thread.data.author_nickname,

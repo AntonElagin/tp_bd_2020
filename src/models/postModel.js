@@ -1,5 +1,5 @@
 const db = require('../modules/db-config');
-const PQ = require('pg-promise').ParameterizedQuery;
+
 
 module.exports = new class PostModel {
   constructor() {
@@ -33,6 +33,10 @@ module.exports = new class PostModel {
         data,
       };
     } catch (err) {
+      console.error(`
+      [Posts] Create Post error:
+      ${err.message}
+      `);
       return {
         success: false,
         err,
@@ -42,7 +46,8 @@ module.exports = new class PostModel {
 
   async createPosts(postsArr) {
     try {
-      const cs = new this._db.pgp.helpers.ColumnSet(['author_id', 'author_nickname',
+      const cs = new this._db.pgp.helpers.ColumnSet([
+        'author_id', 'author_nickname',
         'forum_id', 'forum_slug',
         'thread_id', 'thread_slug',
         'created', 'message', {
@@ -58,13 +63,15 @@ module.exports = new class PostModel {
            'returning *';
 
       const data = await this._db.db.manyOrNone(insertQuery);
-      console.error(data);
       return {
         success: true,
         data,
       };
     } catch (err) {
-      console.warn(`insert Posts error:\n\n${err.message}\n`);
+      console.error(`
+      [Posts] Create Posts error:
+      ${err.message}
+      `);
       return {
         success: false,
         err,
@@ -84,7 +91,10 @@ module.exports = new class PostModel {
         data,
       };
     } catch (err) {
-      console.warn(`Get post by id error:\n${err.message}\n`);
+      console.error(`
+      [Posts] Get Post by id error:
+      ${err.message}
+      `);
       return {
         success: false,
         err,
@@ -105,7 +115,10 @@ module.exports = new class PostModel {
         data,
       };
     } catch (err) {
-      console.warn(`Get post by id error:\n${err.message}\n`);
+      console.error(`
+      [Posts] Create Post by id and thread error:
+      ${err.message}
+      `);
       return {
         success: false,
         err,
@@ -133,8 +146,10 @@ module.exports = new class PostModel {
         data,
       };
     } catch (err) {
-      console.warn(`update message with flat sort:\n\n${err.message}\n`);
-
+      console.error(`
+      [Posts] Update Post message error:
+      ${err.message}
+      `);
       return {
         success: false,
         err,
@@ -165,7 +180,10 @@ module.exports = new class PostModel {
         data,
       };
     } catch (err) {
-      console.warn(`Get post by Thread with flat sort:\n\n${err.message}\n`);
+      console.error(`
+      [Posts] Gets Posts FLAT error:
+      ${err.message}
+      `);
       return {
         success: false,
         err,
@@ -212,7 +230,10 @@ module.exports = new class PostModel {
         data,
       };
     } catch (err) {
-      console.warn(`Get post by Thread with tree sort:\n\n${err.message}\n`);
+      console.error(`
+      [Posts] Get Posts TREE error:
+      ${err.message}
+      `);
 
       return {
         success: false,
@@ -266,8 +287,10 @@ module.exports = new class PostModel {
         data,
       };
     } catch (err) {
-      console.warn(`Get post by Thread parent tree sort:\n\n${err.message}\n`);
-
+      console.error(`
+      [Posts] Get Posts TREE_PARENT error:
+      ${err.message}
+      `);
       return {
         success: false,
         err,

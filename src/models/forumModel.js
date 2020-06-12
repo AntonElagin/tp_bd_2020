@@ -21,7 +21,11 @@ module.exports = new class ForumModel {
         data,
       };
     } catch (err) {
-      console.warn('Create forum error:\n'+ err.message);
+      console.error(`
+      [Forums] Create forum error:
+      ${err.message}
+      `);
+
       return {
         success: false,
         err,
@@ -39,7 +43,11 @@ module.exports = new class ForumModel {
         data,
       };
     } catch (err) {
-      console.warn('get forum details error:\n'+ err.message);
+      console.error(`
+      [Forums] Get forum details error:
+      ${err.message}
+      `);
+
 
       return {
         success: false,
@@ -60,7 +68,11 @@ module.exports = new class ForumModel {
         data,
       };
     } catch (err) {
-      console.warn('update Thread count error:\n'+ err.message);
+      console.error(`
+      [Forums] Update threads count error:
+      ${err.message}
+      `);
+
 
       return {
         success: false,
@@ -80,7 +92,11 @@ module.exports = new class ForumModel {
         data,
       };
     } catch (err) {
-      console.warn('update Post count error:\n'+ err.message);
+      console.error(`
+      [Forums] Update posts count error:
+      ${err.message}
+      `);
+
 
       return {
         success: false,
@@ -105,7 +121,11 @@ module.exports = new class ForumModel {
         data,
       };
     } catch (err) {
-      console.warn('Add user to forum error:\n'+ err.message);
+      console.error(`
+      [Forums] add User to forum error:
+      ${err.message}
+      `);
+
 
       return {
         success: false,
@@ -131,7 +151,10 @@ module.exports = new class ForumModel {
         data,
       };
     } catch (err) {
-      console.warn('Add user to forum error:\n'+ err.message);
+      console.error(`
+      [Forums] add Users to forum error:
+      ${err.message}
+      `);
 
       return {
         success: false,

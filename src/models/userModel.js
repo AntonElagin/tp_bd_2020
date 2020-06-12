@@ -19,7 +19,10 @@ module.exports = new class UserModel {
         data,
       };
     } catch (err) {
-      console.warn('Create user error!' + err.message);
+      console.error(`
+      [Users] Create User error:
+      ${err.message}
+      `);
       return {
         success: false,
         err,
@@ -38,7 +41,14 @@ module.exports = new class UserModel {
         data,
       };
     } catch (err) {
-      console.warn('Get user error!\n' + err.message);
+      console.error(`
+      [Users] Get Users error:
+      ${err.message}
+      `);
+      return {
+        success: false,
+        err,
+      };
       return {
         success: false,
         err,
@@ -62,8 +72,10 @@ module.exports = new class UserModel {
         data,
       };
     } catch (err) {
-      console.warn('Update user error!\n' + err.message);
-
+      console.error(`
+      [Users] Update User error:
+      ${err.message}
+      `);
       return {
         success: false,
         err,
@@ -82,7 +94,10 @@ module.exports = new class UserModel {
         data,
       };
     } catch (err) {
-      console.warn('Get user by nick or email error!\n' + err.message);
+      console.error(`
+      [Users] Get user by nick or email error:
+      ${err.message}
+      `);
 
       return {
         success: false,
@@ -146,7 +161,10 @@ module.exports = new class UserModel {
         data,
       };
     } catch (err) {
-      console.log(`'Get users of forum error : \n\n${err.message}\n\n`);
+      console.error(`
+      [Users] Get users of forum error:
+      ${err.message}
+      `);
       return {
         success: false,
         err,

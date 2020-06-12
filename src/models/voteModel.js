@@ -30,7 +30,10 @@ module.exports = new class PostModel {
         data: data[1][0],
       };
     } catch (err) {
-      console.warn('Create or update vote error\n'+ err.message);
+      console.error(`
+      [Posts] vote error:
+      ${err.message}
+      `);
       return {
         success: false,
         err,

@@ -31,24 +31,6 @@ class ForumController {
         user: forum.user_nickname,
       });
     }
-    // const userExist = await Users.getUserInfo(forumData.user);
-
-    // if ((userExist.success && !userExist.data)) {
-    //   return resp.status(404).json({
-    //     message: `Can't find user with nickname '${forumData.nickname}'\n`,
-    //   });
-    // }
-    // const userData = userExist.data;
-
-    // const forumExist = await Forums.getForumDetails(forumData.slug);
-
-    // if (forumExist.success && forumExist.data) {
-    //   return resp.status(409).json({
-    //     slug: forumExist.data.slug,
-    //     title: forumExist.data.title,
-    //     user: forumExist.data.user_nickname,
-    //   });
-    // }
 
     const createdForum = await Forums.createForum(forumData, user);
 
@@ -88,7 +70,7 @@ class ForumController {
 
     const user = await Users.getUserInfo(threadData.author);
     if (!(user.success && user.data)) {
-      return resp.status(500).status(404).json({
+      return resp.status(404).json({
         message: `Can't find user with nickname ${threadData.author}\n`,
       });
     }
@@ -115,25 +97,39 @@ class ForumController {
       });
     }
 
-    const threadCreated = await Threads.createThread(
+    const created = await Threads.createThreadAndOther(
         threadData,
         forum.data,
         user.data,
     );
 
-    if (threadCreated.success) {
-      const userAddedToForum =
-        await Forums.addUserToForum(user.data, forum.data);
-      const threadAddedToForumCount =
-        await Forums.updateThreadCount(forum.data.id);
-
-      if (userAddedToForum.success && threadAddedToForumCount.success) {
-        threadCreated.data.id = +threadCreated.data.id;
-        return resp.status(201).json(threadCreated.data);
-      }
+    if (!created.success) {
+      return resp.status(500).end();
     }
+    const newThread = created.data;
+    newThread.id = +newThread.id;
+    return resp.status(201).json(newThread);
 
-    return resp.status(500).end();
+
+    // const threadCreated = await Threads.createThread(
+    //     threadData,
+    //     forum.data,
+    //     user.data,
+    // );
+
+    // if (threadCreated.success) {
+    //   const userAddedToForum =
+    //     await Forums.addUserToForum(user.data, forum.data);
+    //   const threadAddedToForumCount =
+    //     await Forums.updateThreadCount(forum.data.id);
+
+    //   if (userAddedToForum.success && threadAddedToForumCount.success) {
+    //     threadCreated.data.id = +threadCreated.data.id;
+    //     return resp.status(201).json(threadCreated.data);
+    //   }
+    // }
+
+    // return resp.status(500).end();
   }
 
   static async getForumThreads(req, resp) {

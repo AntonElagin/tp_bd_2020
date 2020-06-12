@@ -41,6 +41,54 @@ module.exports = new class ThreadModel {
     }
   }
 
+
+  async createThreadAndOther(threadData = {}, forumData = {}, userData= {}) {
+    {
+      try {
+        const data = await this._db.db.multi(`
+        INSERT INTO threads (
+          slug, author_id, author_nickname, forum_id, forum_slug, 
+          created, title, message) 
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+          RETURNING author_nickname as author, created, forum_slug as forum,
+          id, message, title, slug;
+        
+        UPDATE forums SET 
+          threads = threads + 1
+          WHERE id = $4;
+        
+        INSERT INTO forum_users (forum_id, user_id)
+          VALUES ($4, $2)
+          ON CONFLICT ON CONSTRAINT unique_user_in_forum
+          DO NOTHING;         
+          `,
+        [
+          threadData.slug,
+          userData.id,
+          userData.nickname,
+          forumData.id,
+          forumData.slug,
+          threadData.created,
+          threadData.title,
+          threadData.message,
+        ]);
+        return {
+          success: true,
+          data: data[0][0],
+        };
+      } catch (err) {
+        console.error(`
+      [Threads] Create thread and other error:
+      ${err.message}
+      `);
+        return {
+          success: false,
+          err,
+        };
+      }
+    }
+  }
+
   async getThreadBySlugOrId(slug = '', id = -1) {
     try {
       const data = await this._db.db.oneOrNone(`

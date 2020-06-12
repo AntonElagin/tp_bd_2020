@@ -113,4 +113,31 @@ module.exports = new class ForumModel {
       };
     }
   }
+
+  async addUsersToForum(dataArr) {
+    try {
+      const cs = new this._db.pgp.helpers.ColumnSet([
+        'forum_id',
+        'user_id',
+      ], {table: 'forum_users'});
+
+      const insertQuery = this._db.pgp.helpers.insert(dataArr, cs) +
+           'ON CONFLICT ON CONSTRAINT unique_user_in_forum DO NOTHING';
+
+      const data = await this._db.db.manyOrNone(insertQuery);
+
+      return {
+        success: true,
+        data,
+      };
+    } catch (err) {
+      console.warn('Add user to forum error:\n'+ err.message);
+
+      return {
+        success: false,
+        err,
+      };
+    }
+  };
 };
+

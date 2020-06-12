@@ -115,7 +115,7 @@ class ThreadController {
     }
 
 
-    const returnList = [];
+    const addUsersList = [];
     for (const post of posts) {
       const author = await Users.getUserInfo(post.author);
 
@@ -125,7 +125,10 @@ class ThreadController {
         });
       }
 
-
+      addUsersList.push({
+        forum_id: threadExist.data.forum_id,
+        user_id: author.data.id,
+      });
       post.created = created;
       post.author_id = author.data.id;
       post.author_nickname = author.data.nickname;
@@ -148,18 +151,24 @@ class ThreadController {
       // });
 
 
-      const addedToForum = await Forums.addUserToForum(author.data, {
-        id: threadExist.data.forum_id,
-      });
+      // const addedToForum = await Forums.addUserToForum(author.data, {
+      //   id: threadExist.data.forum_id,
+      // });
 
-      if (!addedToForum.success) {
-        return resp.status(500).end();
-      }
+      // if (!addedToForum.success) {
+      //   return resp.status(500).end();
+      // }
     }
 
     const postsInsert = await Posts.createPosts(posts);
 
     if (!postsInsert.success) {
+      return resp.status(500).end();
+    }
+
+    const addedToForum = await Forums.addUsersToForum(addUsersList);
+
+    if (!addedToForum.success) {
       return resp.status(500).end();
     }
 

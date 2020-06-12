@@ -40,6 +40,38 @@ module.exports = new class PostModel {
     }
   }
 
+  async createPosts(postsArr) {
+    try {
+      const cs = new this._db.pgp.helpers.ColumnSet(['author_id', 'author_nickname',
+        'forum_id', 'forum_slug',
+        'thread_id', 'thread_slug',
+        'created', 'message', {
+          name: 'parent',
+          skip: function() {
+            const val = this['parent'];
+            return !val;
+          },
+        },
+      ], {table: 'posts'});
+
+      const insertQuery = this._db.pgp.helpers.insert(postsArr, cs) +
+           'returning *';
+
+      const data = await this._db.db.manyOrNone(insertQuery);
+      console.error(data);
+      return {
+        success: true,
+        data,
+      };
+    } catch (err) {
+      console.warn(`insert Posts error:\n\n${err.message}\n`);
+      return {
+        success: false,
+        err,
+      };
+    }
+  }
+
   async getPostById(id) {
     try {
       const data = await this._db.db.oneOrNone(`
@@ -59,6 +91,7 @@ module.exports = new class PostModel {
       };
     }
   }
+
 
   async getPostByIdAndThread(id, thread) {
     try {

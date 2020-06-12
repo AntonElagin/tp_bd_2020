@@ -16,6 +16,26 @@ const threadTemplate = (val) => {
     title: val.title,
   };
 };
+
+const postsTemplate = (arr) => {
+  const posts = [];
+  for (const post of arr) {
+    posts.push({
+      id: +post.id,
+      slug: post.slug,
+      author: post.author_nickname,
+      forum: post.forum_slug,
+      created: post.created,
+      thread: +post.thread_id,
+      title: post.title,
+      message: post.message,
+      parent: +post.parent,
+    });
+  }
+  return posts;
+};
+
+
 class ThreadController {
   static async getThreadInfo(req, resp) {
     let id;
@@ -107,29 +127,25 @@ class ThreadController {
 
 
       post.created = created;
-      const postCreated = await Posts.createPost(
-          author.data,
-          threadExist.data, post,
-      );
+      post.author_id = author.data.id;
+      post.author_nickname = author.data.nickname;
+      post.forum_id = threadExist.data.forum_id;
+      post.forum_slug = threadExist.data.forum_slug;
+      post.thread_id = threadExist.data.id;
+      post.thread_slug = threadExist.data.slug;
+      post.parent = post.parent || null;
 
-
-      if (!postCreated.data) {
-        return resp.status(500).end();
-      }
-      const postData = postCreated.data;
-      console.log('kek6');
-
-      returnList.push({
-        id: +postData.id,
-        slug: postData.slug,
-        author: postData.author_nickname,
-        forum: postData.forum_slug,
-        created: postData.created,
-        thread: +postData.thread_id,
-        title: postData.title,
-        message: postData.message,
-        parent: +postData.parent,
-      });
+      // returnList.push({
+      // id: +postData.id,
+      // slug: postData.slug,
+      // author: postData.author_nickname,
+      // forum: postData.forum_slug,
+      // created: postData.created,
+      // thread: +postData.thread_id,
+      // title: postData.title,
+      // message: postData.message,
+      // parent: +postData.parent,
+      // });
 
 
       const addedToForum = await Forums.addUserToForum(author.data, {
@@ -141,20 +157,24 @@ class ThreadController {
       }
     }
 
+    const postsInsert = await Posts.createPosts(posts);
 
-    // const updatedThread =
-    //  await Threads.updatePostsCount(threadExist.data.id, returnList.length);
-    const updatedForum = await Forums.updatePostsCount(
-        threadExist.data.forum_id,
-        returnList.length,
-    );
-
-
-    if (!(updatedForum.success /* && updatedThread.success*/)) {
+    if (!postsInsert.success) {
       return resp.status(500).end();
     }
 
-    return resp.status(201).json(returnList);
+
+    const updatedForum = await Forums.updatePostsCount(
+        threadExist.data.forum_id,
+        posts.length,
+    );
+
+
+    if (!(updatedForum.success)) {
+      return resp.status(500).end();
+    }
+
+    return resp.status(201).json(postsTemplate(postsInsert.data));
   }
 
   static async updateThread(req, resp) {

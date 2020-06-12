@@ -220,32 +220,55 @@ class ThreadController {
       slug = req.params.key;
       id = null;
     }
-    const userExist = await Users.getUserInfo(vote.nickname);
 
-    if (userExist.success) {
-      if (!userExist.data) {
-        return resp.status(404).json({
-          message: `Can't find user with nickname '${vote.nickname}'`,
-        });
-      }
-    } else {
+    const existed = await Threads.getUserAndThread(vote.nickname, slug, id);
+
+    if (!existed.success) {
       return resp.status(500).end();
     }
 
-    const threadExist = await Threads.getThreadBySlugOrId(slug, id);
+    const user = existed.data.user;
+    const thread = existed.data.thread;
 
-    if (threadExist.success) {
-      if (!threadExist.data) {
-        return resp.status(404).json({
-          message: `Can't find thread with slug or id '${slug || id}'`,
-        });
-      }
-    } else {
-      return resp.status(500).end();
+    if (!user) {
+      return resp.status(404).json({
+        message: `Can't find user with nickname '${vote.nickname}'`,
+      });
     }
+
+    if (!thread) {
+      return resp.status(404).json({
+        message: `Can't find thread with slug or id '${slug || id}'`,
+      });
+    }
+
+
+    // const userExist = await Users.getUserInfo(vote.nickname);
+
+    // if (userExist.success) {
+    //   if (!userExist.data) {
+    //     return resp.status(404).json({
+    //       message: `Can't find user with nickname '${vote.nickname}'`,
+    //     });
+    //   }
+    // } else {
+    //   return resp.status(500).end();
+    // }
+
+    // const threadExist = await Threads.getThreadBySlugOrId(slug, id);
+
+    // if (threadExist.success) {
+    //   if (!threadExist.data) {
+    //     return resp.status(404).json({
+    //       message: `Can't find thread with slug or id '${slug || id}'`,
+    //     });
+    //   }
+    // } else {
+    //   return resp.status(500).end();
+    // }
 
     const voteUpdated = await Votes.createOrUpdateVote(
-        threadExist.data,
+        thread,
         {nickname: vote.nickname},
         vote.voice);
 

@@ -318,4 +318,37 @@ module.exports = new class ThreadModel {
       };
     }
   }
+
+  async getUserAndThread(nickname ='', slug = '', id = -1) {
+    try {
+      const data = await this._db.db.multi(`
+      Select * from users
+        where nickname = $3;
+
+      Select * from threads
+        where slug = $1 or id = $2;
+    `,
+      [
+        slug,
+        id,
+        nickname,
+      ]);
+      return {
+        success: true,
+        data: {
+          user: data[0][0],
+          thread: data[1][0],
+        },
+      };
+    } catch (err) {
+      console.error(`
+      [Threads] Get thread by slug or id error:
+      ${err.message}
+      `);
+      return {
+        success: false,
+        err,
+      };
+    }
+  }
 };

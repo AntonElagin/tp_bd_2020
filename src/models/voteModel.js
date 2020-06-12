@@ -17,8 +17,6 @@ module.exports = new class PostModel {
 
       select * from threads where id = $4;
       `, [
-      // RETURNING *, xmax::text::int as changed`, [
-
         user.nickname,
         thread.id,
         voice,

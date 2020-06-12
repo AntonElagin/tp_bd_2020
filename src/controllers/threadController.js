@@ -93,26 +93,29 @@ class ThreadController {
       return resp.status(201).json([]);
     }
 
+    const parentIdList = [];
     for (const post of posts) {
       if (post.parent) {
-        const postParent = await Posts.getPostByIdAndThread(
-            post.parent,
-            threadExist.data,
-        );
-
-        if (postParent.success && !postParent.data) {
-          return resp.status(409).json({
-            message: `Can't find parent post with id '${post.parent}'`,
-          });
-        }
-
-
-        if (!postParent.success) {
-          return resp.status(500).end();
-        }
+        parentIdList.push(post.parent);
       }
     }
 
+    if (parentIdList > 0) {
+      const postsParent = await Posts.getPostByIdListAndThread(
+          parentIdList,
+          threadExist.data,
+      );
+
+      if (!postsParent.success) {
+        return resp.status(500).end();
+      }
+
+      if (postsParent.data.length !== parentIdList.length) {
+        return resp.status(409).json({
+          message: `Can't find parent post`,
+        });
+      }
+    }
     const authorSet = new Set();
     const addUsersList = [];
     for (const post of posts) {
@@ -241,31 +244,6 @@ class ThreadController {
         message: `Can't find thread with slug or id '${slug || id}'`,
       });
     }
-
-
-    // const userExist = await Users.getUserInfo(vote.nickname);
-
-    // if (userExist.success) {
-    //   if (!userExist.data) {
-    //     return resp.status(404).json({
-    //       message: `Can't find user with nickname '${vote.nickname}'`,
-    //     });
-    //   }
-    // } else {
-    //   return resp.status(500).end();
-    // }
-
-    // const threadExist = await Threads.getThreadBySlugOrId(slug, id);
-
-    // if (threadExist.success) {
-    //   if (!threadExist.data) {
-    //     return resp.status(404).json({
-    //       message: `Can't find thread with slug or id '${slug || id}'`,
-    //     });
-    //   }
-    // } else {
-    //   return resp.status(500).end();
-    // }
 
     const voteUpdated = await Votes.createOrUpdateVote(
         thread,

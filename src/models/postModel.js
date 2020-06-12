@@ -126,6 +126,30 @@ module.exports = new class PostModel {
     }
   }
 
+  async getPostByIdListAndThread(idList, thread) {
+    try {
+      console.log(idList);
+      const data = await this._db.db.manyOrNone(`
+        SELECT * from posts
+        where id in ($1:csv) and thread_id = $2
+      `, [idList, thread.id]);
+
+      return {
+        success: true,
+        data,
+      };
+    } catch (err) {
+      console.error(`
+      [Posts] Create Post by id list and thread error:
+      ${err.message}
+      `);
+      return {
+        success: false,
+        err,
+      };
+    }
+  }
+
   async updatePostMessage(id = -1, message = '') {
     try {
       const data = await this._db.db.oneOrNone(`

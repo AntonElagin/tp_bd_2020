@@ -113,7 +113,7 @@ class PostController {
             break;
           case 'thread':
             const thread =
-              await Threads.getThreadBySlug(postExist.data.thread_slug);
+              await Threads.getThreadById(postExist.data.thread_id);
 
             if (!thread.success) {
               return resp.status(500).end();

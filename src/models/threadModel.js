@@ -94,6 +94,32 @@ module.exports = new class ThreadModel {
     }
   }
 
+  async getThreadById(id = -1) {
+    try {
+      const data = await this._db.db.oneOrNone(`
+    Select * from threads
+    where id = $1;
+    `,
+      [
+        id,
+      ]);
+      return {
+        success: true,
+        data,
+      };
+    } catch (err) {
+      console.error(`
+      [Threads] Get thread by id error:
+      ${err.message}
+      `);
+
+      return {
+        success: false,
+        err,
+      };
+    }
+  }
+
 
   async getForumThreads(
       forum = {}, {

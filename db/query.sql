@@ -186,3 +186,8 @@ UPDATE ON votes
     FOR EACH ROW
 EXECUTE PROCEDURE fn_update_thread_votes_upd
 ();
+
+
+CREATE INDEX
+IF NOT EXISTS idx_posts_path_to_this_post ON posts USING GIN
+(path_to_this_post);

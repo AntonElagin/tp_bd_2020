@@ -167,17 +167,6 @@ module.exports = new class ThreadModel {
 
   async updateThread(id, thread) {
     try {
-      // const data = await this._db.db.one(`
-      //   Update threads
-      //   set message = $1 , title = $2
-      //   where id = $3
-      //   Returning *
-      // `, [
-      //   thread.message,
-      //   thread.title,
-      //   thread.id,
-      // ]);
-
       const condition = this._db.pgp.as.format(
           ' WHERE id = $1 Returning *',
           [

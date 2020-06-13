@@ -108,10 +108,15 @@ IF NOT EXISTS forum_users
 	user_id         BIGINT     NOT NULL ,
 	CONSTRAINT unique_user_in_forum UNIQUE(user_id, forum_slug)
 );
-
-CREATE INDEX IF NOT EXISTS index_forum_users_forum_slug ON forum_users (forum_slug);
-CREATE INDEX IF NOT EXISTS index_forum_users_user_id  ON forum_users (user_id);
-CREATE INDEX IF NOT EXISTS index_forum_users_double   ON forum_users (user_id, forum_slug);
+CREATE INDEX IF NOT EXISTS idx_posts_path ON posts USING GIN (path);
+CREATE INDEX IF NOT EXISTS idx_posts_thread ON posts (thread);
+CREATE INDEX IF NOT EXISTS idx_posts_forum ON posts (forum);
+CREATE INDEX IF NOT EXISTS idx_posts_parent ON posts (parent);
+CREATE INDEX IF NOT EXISTS idx_posts_thread_id ON posts (thread, id);
+CREATE INDEX IF NOT EXISTS idx_posts_pok
+    ON posts (id, parent, thread, forum, author, created, message, isedited, path);
+CREATE INDEX IF NOT EXISTS idx_posts_created
+    ON posts (created);
 
 CREATE OR REPLACE FUNCTION add_path_to_post()
 RETURNS TRIGGER AS $add_path_to_post$

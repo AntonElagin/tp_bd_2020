@@ -7,9 +7,9 @@ const Votes = require('../models/voteModel');
 const threadTemplate = (val) => {
   return {
     votes: Number(val.votes),
-    author: val.author_nickname,
+    author: val.author,
     created: val.created,
-    forum: val.forum_slug,
+    forum: val.forum,
     id: Number(val.id),
     message: val.message,
     slug: val.slug,
@@ -23,10 +23,10 @@ const postsTemplate = (arr) => {
     posts.push({
       id: +post.id,
       slug: post.slug,
-      author: post.author_nickname,
-      forum: post.forum_slug,
+      author: post.author,
+      forum: post.forum,
       created: post.created,
-      thread: +post.thread_id,
+      thread: +post.thread,
       title: post.title,
       message: post.message,
       parent: +post.parent,
@@ -131,19 +131,16 @@ class ThreadController {
 
       if (!authorSet.has(author.data.nickname)) {
         addUsersList.push({
-          forum_id: threadExist.data.forum_id,
+          forum_slug: threadExist.data.forum,
           user_id: author.data.id,
         });
 
         authorSet.add(author.data.nickname);
       }
       post.created = created;
-      post.author_id = author.data.id;
-      post.author_nickname = author.data.nickname;
-      post.forum_id = threadExist.data.forum_id;
-      post.forum_slug = threadExist.data.forum_slug;
-      post.thread_id = threadExist.data.id;
-      post.thread_slug = threadExist.data.slug;
+      post.author= author.data.nickname;
+      post.forum = threadExist.data.forum;
+      post.thread = threadExist.data.id;
       post.parent = post.parent || null;
     }
 
@@ -161,7 +158,7 @@ class ThreadController {
 
 
     const updatedForum = await Forums.updatePostsCount(
-        threadExist.data.forum_id,
+        threadExist.data.forum,
         posts.length,
     );
 
@@ -304,14 +301,14 @@ class ThreadController {
     const returnArray = [];
     for (const post of posts.data) {
       returnArray.push({
-        author: post.author_nickname,
+        author: post.author,
         created: post.created,
-        forum: post.forum_slug,
+        forum: post.forum,
         id: +post.id,
         isEdited: post.isedited,
         message: post.message,
         parent: +post.parent,
-        thread: +post.thread_id,
+        thread: +post.thread,
       });
     }
 

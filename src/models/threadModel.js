@@ -9,16 +9,14 @@ module.exports = new class ThreadModel {
     {
       try {
         const data = await this._db.db.one(`INSERT INTO threads (
-          slug, author_id, author_nickname, forum_id, forum_slug, 
+          slug, author, forum, 
           created, title, message) 
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-          RETURNING author_nickname as author, created, forum_slug as forum,
+          VALUES ($1, $2, $3, $4, $5, $6) 
+          RETURNING author_nickname as author, created, forum,
           id, message, title, slug;`,
         [
           threadData.slug,
-          userData.id,
           userData.nickname,
-          forumData.id,
           forumData.slug,
           threadData.created,
           threadData.title,
@@ -47,30 +45,30 @@ module.exports = new class ThreadModel {
       try {
         const data = await this._db.db.multi(`
         INSERT INTO threads (
-          slug, author_id, author_nickname, forum_id, forum_slug, 
+          slug, author, forum, 
           created, title, message) 
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-          RETURNING author_nickname as author, created, forum_slug as forum,
+          VALUES ($1, $2, $3, $4, $5, $6) 
+          RETURNING author, created, forum,
           id, message, title, slug;
         
         UPDATE forums SET 
           threads = threads + 1
-          WHERE id = $4;
+          WHERE id = $8;
         
-        INSERT INTO forum_users (forum_id, user_id)
-          VALUES ($4, $2)
+        INSERT INTO forum_users (forum_slug, user_id)
+          VALUES ($3, $7)
           ON CONFLICT ON CONSTRAINT unique_user_in_forum
           DO NOTHING;         
           `,
         [
           threadData.slug,
-          userData.id,
           userData.nickname,
-          forumData.id,
           forumData.slug,
           threadData.created,
           threadData.title,
           threadData.message,
+          userData.id,
+          forumData.id,
         ]);
         return {
           success: true,
@@ -181,43 +179,44 @@ module.exports = new class ThreadModel {
         if (desc) {
           data = await this._db.db.manyOrNone(`
           Select created, id, message, slug, title ,
-          author_nickname as author, forum_slug as forum
+          author, forum
           from threads
-          where forum_id = $1 and created <= $2
+          where forum = $1 and created <= $2
           order by created DESC
           limit $3
         `,
           [
-            forum.id,
+            forum.slug,
             since,
             limit,
           ]);
         } else {
           data = await this._db.db.manyOrNone(`
           Select created, id, message, slug, title ,
-          author_nickname as author, forum_slug as forum
+          author, forum
           from threads
-          where forum_id = $1 and created >= $2
+          where forum = $1 and created >= $2
           order by created ASC
           limit $3
         `,
           [
-            forum.id,
+            forum.slug,
             since,
             limit,
           ]);
         }
       } else {
         data = await this._db.db.manyOrNone(`
-          Select created, id, message, slug, title ,
-          author_nickname as author, forum_slug as forum
+          Select created, id, message,
+           slug, title ,
+           author, forum
           from threads
-          where forum_id = $1
+          where forum = $1
           order by created $2:raw
           limit $3
         `,
         [
-          forum.id,
+          forum.slug,
           (desc)? 'DESC': 'ASC',
           limit,
         ]);

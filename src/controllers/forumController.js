@@ -28,7 +28,7 @@ class ForumController {
       return resp.status(409).json({
         slug: forum.slug,
         title: forum.title,
-        user: forum.user_nickname,
+        user: forum.author,
       });
     }
 
@@ -38,7 +38,7 @@ class ForumController {
       return resp.status(201).json({
         slug: createdForum.data.slug,
         title: createdForum.data.title,
-        user: createdForum.data.user_nickname,
+        user: createdForum.data.author,
       });
     }
 
@@ -58,7 +58,7 @@ class ForumController {
     res.json({
       slug: forumExist.data.slug,
       title: forumExist.data.title,
-      user: forumExist.data.user_nickname,
+      user: forumExist.data.author,
       posts: forumExist.data.posts,
       threads: forumExist.data.threads,
     });
@@ -87,9 +87,9 @@ class ForumController {
 
     if (thread.success && thread.data) {
       return resp.status(409).json({
-        author: thread.data.author_nickname,
+        author: thread.data.author,
         created: thread.data.created,
-        forum: thread.data.forum_slug,
+        forum: thread.data.forum,
         id: +thread.data.id,
         message: thread.data.message,
         slug: thread.data.slug,

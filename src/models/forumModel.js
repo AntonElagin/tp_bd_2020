@@ -8,13 +8,12 @@ module.exports = new class ForumModel {
   async createForum(forumData = {}, userData = {}) {
     try {
       const data = await this._db.db.one(`INSERT INTO
-      forums (slug, title, user_nickname, user_id)
-       VALUES ($1, $2, $3, $4)
+      forums (slug, title, author)
+       VALUES ($1, $2, $3)
        RETURNING *`, [
         forumData.slug,
         forumData.title,
         userData.nickname,
-        userData.id,
       ]);
       return {
         success: true,
@@ -37,7 +36,9 @@ module.exports = new class ForumModel {
     try {
       const data = await this._db.db.oneOrNone(`Select * 
       from forums
-      where slug = $1`, [forumSlug]);
+      where slug = $1`, [
+        forumSlug,
+      ]);
       return {
         success: true,
         data,
@@ -115,12 +116,12 @@ module.exports = new class ForumModel {
     }
   }
 
-  async updatePostsCount(id = -1, count = 1) {
+  async updatePostsCount(slug = -1, count = 1) {
     try {
       const data = await this._db.db.one(`UPDATE forums SET 
       posts = posts + $1
-      WHERE id = $2
-      RETURNING *`, [count, id]);
+      WHERE slug = $2
+      RETURNING *`, [count, slug]);
       return {
         success: true,
         data,
@@ -142,12 +143,12 @@ module.exports = new class ForumModel {
   async addUserToForum(user, forum) {
     try {
       const data = await this._db.db.oneOrNone(`
-            INSERT INTO forum_users (forum_id, user_id)
+            INSERT INTO forum_users (forum_slug, user_id)
             VALUES ($1, $2)
             ON CONFLICT ON CONSTRAINT unique_user_in_forum
             DO NOTHING`,
       [
-        forum.id,
+        forum.slug,
         user.id,
       ]);
       return {
@@ -171,7 +172,7 @@ module.exports = new class ForumModel {
   async addUsersToForum(dataArr) {
     try {
       const cs = new this._db.pgp.helpers.ColumnSet([
-        'forum_id',
+        'forum_slug',
         'user_id',
       ], {table: 'forum_users'});
 

@@ -120,11 +120,11 @@ module.exports = new class UserModel {
         SELECT id, about, email, fullname, nickname
         from users as u
         join forum_users as f ON u.id = f.user_id
-        where f.forum_id = $1 AND nickname < $2
+        where f.forum_slug = $1 AND nickname < $2
         order by nickname DESC
         limit $3
       `, [
-            forum.id,
+            forum.slug,
             since,
             +limit,
           ]);
@@ -133,11 +133,11 @@ module.exports = new class UserModel {
         SELECT id, about, email, fullname, nickname
         from users as u
         join forum_users as f ON u.id = f.user_id
-        where f.forum_id = $1 and nickname > $2
+        where f.forum_slug = $1 and nickname > $2
         order by nickname ASC
         limit $3
       `, [
-            forum.id,
+            forum.slug,
             since,
             +limit,
           ]);
@@ -147,11 +147,11 @@ module.exports = new class UserModel {
           SELECT id, about, email, fullname, nickname
           from users as u
           join forum_users as f ON u.id = f.user_id
-          where f.forum_id = $1
+          where f.forum_slug = $1
           order by nickname $2:raw
           limit $3
         `, [
-          forum.id,
+          forum.slug,
            (desc) ? 'desc': 'asc',
            +limit]);
       }

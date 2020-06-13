@@ -19,12 +19,12 @@ class PostController {
 
     if (!message) {
       return resp.status(200).json({
-        author: postExist.data.author_nickname,
+        author: postExist.data.author,
         created: postExist.data.created,
-        forum: postExist.data.forum_slug,
+        forum: postExist.data.forum,
         id: +postExist.data.id,
         message: postExist.data.message,
-        thread: +postExist.data.thread_id,
+        thread: +postExist.data.thread,
       });
     }
 
@@ -37,12 +37,12 @@ class PostController {
         return resp.status(200).json(updatedPost.data);
       }
       return resp.status(200).json({
-        author: postExist.data.author_nickname,
+        author: postExist.data.author,
         created: postExist.data.created,
-        forum: postExist.data.forum_slug,
+        forum: postExist.data.forum,
         id: +postExist.data.id,
         message: postExist.data.message,
-        thread: +postExist.data.thread_id,
+        thread: +postExist.data.thread,
       });
     }
     return resp.status(500).end();
@@ -67,14 +67,13 @@ class PostController {
     }
     const returnObj= {
       post: {
-        author: postExist.data.author_nickname,
+        author: postExist.data.author,
         created: postExist.data.created,
-        forum: postExist.data.forum_slug,
+        forum: postExist.data.forum,
         id: +postExist.data.id,
         isEdited: postExist.data.isedited,
         message: postExist.data.message,
-        // parent: postExist.data.parent,
-        thread: +postExist.data.thread_id,
+        thread: +postExist.data.thread,
       },
     };
 
@@ -108,21 +107,21 @@ class PostController {
               slug: forum.data.slug,
               threads: forum.data.threads,
               title: forum.data.title,
-              user: forum.data.user_nickname,
+              user: forum.data.author,
             };
             break;
           case 'thread':
             const thread =
-              await Threads.getThreadById(postExist.data.thread_id);
+              await Threads.getThreadById(postExist.data.thread);
 
             if (!thread.success) {
               return resp.status(500).end();
             }
 
             returnObj.thread = {
-              author: thread.data.author_nickname,
+              author: thread.data.author,
               created: thread.data.created,
-              forum: thread.data.forum_slug,
+              forum: thread.data.forum,
               id: +thread.data.id,
               slug: thread.data.slug,
               message: thread.data.message,

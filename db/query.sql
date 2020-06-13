@@ -6,7 +6,7 @@ CASCADE;
 DROP TABLE IF EXISTS forums
 CASCADE;
 DROP TABLE IF EXISTS threads
-CASCADE;cd
+CASCADE;
 DROP TABLE IF EXISTS posts
 CASCADE;
 DROP TABLE IF EXISTS votes
@@ -44,13 +44,11 @@ IF NOT EXISTS index_users_all
 CREATE TABLE
 IF NOT EXISTS forums
 (
-    id              BIGSERIAL   PRIMARY KEY,
-    slug            CITEXT      UNIQUE NOT NULL,
-    title           VARCHAR     NOT NULL,
-    user_id        BIGINT      NOT NULL REFERENCES users
-(id),
-    user_nickname  CITEXT      NOT NULL REFERENCES users
-(nickname),
+    id      BIGSERIAL   PRIMARY KEY,
+    slug    CITEXT      UNIQUE NOT NULL,
+    title   VARCHAR     NOT NULL,
+    user_id BIGINT      NOT NULL REFERENCES users(id),
+    user_nickname  CITEXT      NOT NULL REFERENCES users(nickname),
     posts           INTEGER     DEFAULT 0,
     threads         INTEGER     DEFAULT 0
 );
@@ -62,22 +60,16 @@ IF NOT EXISTS index_forums_slug ON forums
 CREATE TABLE
 IF NOT EXISTS threads
 (
-    id              BIGSERIAL                   PRIMARY KEY,
-    slug            CITEXT                      UNIQUE,
-    author_id       BIGINT                      NOT NULL REFERENCES users
-(id),
-    author_nickname CITEXT                      NOT NULL REFERENCES users
-(nickname),
-    forum_id        BIGINT                      NOT NULL REFERENCES forums
-(id),
-    forum_slug      CITEXT                      NOT NULL REFERENCES forums
-(slug),
-    created         TIMESTAMP
-WITH TIME ZONE    DEFAULT NOW
-(),
-    title           VARCHAR                     NOT NULL,
-    message         VARCHAR                     NOT NULL,
-    votes           INTEGER                     DEFAULT 0
+    id              BIGSERIAL  PRIMARY KEY,
+    slug            CITEXT     UNIQUE,
+    author_id       BIGINT     NOT NULL REFERENCES users (id),
+    author_nickname CITEXT     NOT NULL REFERENCES users (nickname),
+    forum_id        BIGINT     NOT NULL REFERENCES forums (id),
+    forum_slug      CITEXT     NOT NULL REFERENCES forums (slug),
+    created         TIMESTAMP WITH TIME ZONE    DEFAULT NOW(),
+    title           VARCHAR    NOT NULL,
+    message         VARCHAR    NOT NULL,
+    votes           INTEGER    DEFAULT 0
 );
 
 CREATE INDEX
@@ -91,40 +83,31 @@ IF NOT EXISTS index_threads_id ON threads
 CREATE TABLE
 IF NOT EXISTS posts
 (
-    id                  BIGSERIAL                   PRIMARY KEY,
-    author_id           BIGSERIAL                   NOT NULL REFERENCES users
-(id),
-    author_nickname     CITEXT                      NOT NULL REFERENCES users
-(nickname),
-    forum_id            BIGINT                      NOT NULL REFERENCES forums
-(id),
-    forum_slug          CITEXT                      NOT NULL REFERENCES forums
-(slug),
-    thread_id           BIGINT                      NOT NULL REFERENCES threads
-(id),
-    thread_slug         CITEXT                      REFERENCES threads
-(slug),
-    created             TIMESTAMP
-WITH TIME ZONE    DEFAULT NOW
-(),
-    isEdited            BOOLEAN                     DEFAULT FALSE,
-    message             VARCHAR                     NOT NULL,
-    parent              BIGINT                      NULL REFERENCES posts
-(id),
-    path_to_this_post   BIGINT                      ARRAY
+    id                  BIGSERIAL PRIMARY KEY,
+    author_id           BIGSERIAL NOT NULL REFERENCES users(id),
+    author_nickname     CITEXT    NOT NULL REFERENCES users(nickname),
+    forum_id            BIGINT    NOT NULL REFERENCES forums(id),
+    forum_slug          CITEXT    NOT NULL REFERENCES forums(slug),
+    thread_id           BIGINT    NOT NULL REFERENCES threads(id),
+    thread_slug         CITEXT    REFERENCES threads(slug),
+    created             TIMESTAMP WITH TIME ZONE    DEFAULT NOW(),
+    isEdited            BOOLEAN   DEFAULT FALSE,
+    message             VARCHAR   NOT NULL,
+    parent              BIGINT    NULL REFERENCES posts(id),
+    path_to_this_post   BIGINT[]
 );
+
+CREATE INDEX
+IF NOT EXISTS index_posts_path_to_this_post ON posts USING GIN(path_to_this_post);
 
 CREATE TABLE
 IF NOT EXISTS votes
 (
     id              BIGSERIAL   PRIMARY KEY,
-    nickname        CITEXT      NOT NULL REFERENCES users
-(nickname),
-    thread          BIGINT      NOT NULL REFERENCES threads
-(id),
+    nickname        CITEXT      NOT NULL REFERENCES users(nickname),
+    thread          BIGINT      NOT NULL REFERENCES threads(id),
     voice           INTEGER     DEFAULT 0,
-    CONSTRAINT unique_vote UNIQUE
-(nickname, thread)
+    CONSTRAINT unique_vote UNIQUE(nickname, thread)
 );
 
 CREATE INDEX
@@ -134,20 +117,16 @@ IF NOT EXISTS index_votes_double ON votes
 CREATE TABLE
 IF NOT EXISTS forum_users
 (
-	forum_id        BIGINT     NOT NULL REFERENCES forums
-(id),
-	user_id         BIGINT     NOT NULL REFERENCES users
-(id),
-	CONSTRAINT unique_user_in_forum UNIQUE
-(user_id, forum_id)
+	forum_id        BIGINT     NOT NULL REFERENCES forums(id),
+	user_id         BIGINT     NOT NULL REFERENCES users(id),
+	CONSTRAINT unique_user_in_forum UNIQUE(user_id, forum_id)
 );
 
 CREATE INDEX
-IF NOT EXISTS index_forum_users_double ON votes
-(forum_id, user_id);
+IF NOT EXISTS index_forum_users_double ON forum_users (user_id, forum_id);
 
-CREATE OR REPLACE FUNCTION add_path_to_post
-() RETURNS TRIGGER AS $add_path_to_post$
+CREATE OR REPLACE FUNCTION add_path_to_post()
+RETURNS TRIGGER AS $add_path_to_post$
 DECLARE
         parent_path BIGINT[];
 BEGIN
@@ -225,6 +204,3 @@ EXECUTE PROCEDURE fn_update_thread_votes_upd
 ();
 
 
-CREATE INDEX
-IF NOT EXISTS index_posts_path_to_this_post ON posts USING GIN
-(path_to_this_post);

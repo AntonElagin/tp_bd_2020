@@ -222,32 +222,31 @@ module.exports = new class PostModel {
   } = {}) {
     try {
       let whereCondition;
-      if (since && desc) {
-        whereCondition = this._db.pgp.as.format(` 
-        WHERE thread_id = $1
+      if (since ) {
+        if (desc) {
+          whereCondition = this._db.pgp.as.format(` 
         AND path_to_this_post <
-        (SELECT path_to_this_post FROM posts WHERE id = $2) `, [
-          threadId,
-          since,
-        ]);
-      } else if (since && !desc) {
-        whereCondition = this._db.pgp.as.format(` WHERE thread_id = $1
+        (SELECT path_to_this_post FROM posts WHERE id = $1) `, [
+            since,
+          ]);
+        } else {
+          whereCondition = this._db.pgp.as.format(`
         AND path_to_this_post >
-         (SELECT path_to_this_post FROM posts WHERE id = $2) `,
-        [
-          threadId,
-          since,
-        ]);
-      } else {
-        whereCondition = this._db
-            .pgp.as.format(` WHERE thread_id = $1 `, [threadId]);
+         (SELECT path_to_this_post FROM posts WHERE id = $1) `,
+          [
+            since,
+          ]);
+        }
       }
       const data = await this._db.db.manyOrNone(`
-        SELECT * FROM posts $1:raw
-        ORDER BY path_to_this_post $2:raw LIMIT $3`, [
-        whereCondition.toString(),
+        SELECT * FROM posts
+        WHERE thread_id = $1 $2:raw
+        ORDER BY path_to_this_post $3:raw LIMIT $4`, [
+        threadId,
+        (since ) ? whereCondition.toString() : '',
         (desc ? ' DESC' : 'ASC'),
-        limit]);
+        limit,
+      ]);
 
       return {
         success: true,

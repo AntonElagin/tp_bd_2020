@@ -96,26 +96,28 @@ class ThreadController {
     const parentIdList = [];
     for (const post of posts) {
       if (post.parent) {
-        parentIdList.push(post.parent);
-      }
-    }
-
-    if (parentIdList > 0) {
-      const postsParent = await Posts.getPostByIdListAndThread(
-          parentIdList,
-          threadExist.data,
-      );
-
-      if (!postsParent.success) {
-        return resp.status(500).end();
-      }
-
-      if (postsParent.data.length !== parentIdList.length) {
-        return resp.status(409).json({
-          message: `Can't find parent post`,
+        parentIdList.push({
+          thread_id: threadExist.data.id,
+          id: post.parent,
         });
+        const postParent = await Posts.getPostByIdAndThread(
+            post.parent,
+            threadExist.data,
+        );
+
+        if (postParent.success && !postParent.data) {
+          return resp.status(409).json({
+            message: `Can't find parent post with id '${post.parent}'`,
+          });
+        }
+
+
+        if (!postParent.success) {
+          return resp.status(500).end();
+        }
       }
     }
+
     const authorSet = new Set();
     const addUsersList = [];
     for (const post of posts) {
@@ -224,38 +226,22 @@ class ThreadController {
       id = null;
     }
 
-    const existed = await Threads.getUserAndThread(vote.nickname, slug, id);
 
-    if (!existed.success) {
-      return resp.status(500).end();
+    const result = await Votes.createOrUpdateVote(
+        vote.nickname,
+        slug,
+        id,
+        vote.voice,
+    );
+
+    switch (result.status) {
+      case 404:
+        return resp.status(404).json(result.data);
+      case 200:
+        return resp.status(200).json(threadTemplate(result.data));
+      case 500:
+        return resp.status(500).end();
     }
-
-    const user = existed.data.user;
-    const thread = existed.data.thread;
-
-    if (!user) {
-      return resp.status(404).json({
-        message: `Can't find user with nickname '${vote.nickname}'`,
-      });
-    }
-
-    if (!thread) {
-      return resp.status(404).json({
-        message: `Can't find thread with slug or id '${slug || id}'`,
-      });
-    }
-
-    const voteUpdated = await Votes.createOrUpdateVote(
-        thread,
-        {nickname: vote.nickname},
-        vote.voice);
-
-    if (!voteUpdated.success) {
-      return resp.status(500).end();
-    }
-
-
-    return resp.status(200).json(threadTemplate(voteUpdated.data));
   }
 
   static async getThreadPosts(req, resp) {

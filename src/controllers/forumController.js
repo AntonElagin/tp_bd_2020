@@ -109,27 +109,6 @@ class ForumController {
     const newThread = created.data;
     newThread.id = +newThread.id;
     return resp.status(201).json(newThread);
-
-
-    // const threadCreated = await Threads.createThread(
-    //     threadData,
-    //     forum.data,
-    //     user.data,
-    // );
-
-    // if (threadCreated.success) {
-    //   const userAddedToForum =
-    //     await Forums.addUserToForum(user.data, forum.data);
-    //   const threadAddedToForumCount =
-    //     await Forums.updateThreadCount(forum.data.id);
-
-    //   if (userAddedToForum.success && threadAddedToForumCount.success) {
-    //     threadCreated.data.id = +threadCreated.data.id;
-    //     return resp.status(201).json(threadCreated.data);
-    //   }
-    // }
-
-    // return resp.status(500).end();
   }
 
   static async getForumThreads(req, resp) {

@@ -86,6 +86,8 @@ IF NOT EXISTS posts
 
 CREATE INDEX IF NOT EXISTS index_posts_path ON posts USING GIN(path);
 CREATE INDEX IF NOT EXISTS index_posts_thread_and_id ON posts (thread, id);
+CREATE INDEX IF NOT EXISTS idx_posts_pok
+    ON posts (id, parent, thread, forum, author, created, message, isedited, path);
 
 CREATE UNLOGGED TABLE
 IF NOT EXISTS votes

@@ -24,9 +24,8 @@ RUN /etc/init.d/postgresql start &&\
 # Adjust PostgreSQL configuration so that remote connections to the
 # database are possible.
 RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/$PGVER/main/pg_hba.conf
-
-# And add ``listen_addresses`` to ``/etc/postgresql/$PGVER/main/postgresql.conf``
 RUN echo "listen_addresses='*'" >> /etc/postgresql/$PGVER/main/postgresql.conf
+ADD ./db/postgresql.conf /etc/postgresql/$PGVER/main/conf.d/basic.conf
 
 # Expose the PostgreSQL port
 EXPOSE 5432

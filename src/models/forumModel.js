@@ -143,13 +143,12 @@ module.exports = new class ForumModel {
   async addUserToForum(user, forum) {
     try {
       const data = await this._db.db.oneOrNone(`
-            INSERT INTO forum_users (forum_slug, user_id)
+            INSERT INTO forum_users (forum_slug, user_nickname)
             VALUES ($1, $2)
-            ON CONFLICT ON CONSTRAINT unique_user_in_forum
-            DO NOTHING`,
+            ON CONFLICT DO NOTHING`,
       [
         forum.slug,
-        user.id,
+        user.nickname,
       ]);
       return {
         success: true,
@@ -171,15 +170,33 @@ module.exports = new class ForumModel {
 
   async addUsersToForum(dataArr) {
     try {
-      const cs = new this._db.pgp.helpers.ColumnSet([
-        'forum_slug',
-        'user_id',
-      ], {table: 'forum_users'});
+      const data = await this._db.db.tx(async (t) => {
+        const arr = [];
+        for (const row of dataArr) {
+          arr.push(
+              await t.oneOrNone(`
+              Insert into forum_users (forum_slug, user_nickname)
+              values ($1, $2)
+              ON CONFLICT DO NOTHING
+              ;
+            `, [
+                row.forum_slug,
+                row.user_nickname,
+              ]),
+          );
+        }
 
-      const insertQuery = this._db.pgp.helpers.insert(dataArr, cs) +
-           'ON CONFLICT ON CONSTRAINT unique_user_in_forum DO NOTHING';
+        return t.batch(arr);
+      });
+      // const cs = new this._db.pgp.helpers.ColumnSet([
+      //   'forum_slug',
+      //   'user_nickname',
+      // ], {table: 'forum_users'});
 
-      const data = await this._db.db.manyOrNone(insertQuery);
+      // const insertQuery = this._db.pgp.helpers.insert(dataArr, cs) +
+      //      'ON CONFLICT DO NOTHING';
+
+      // const data = await this._db.db.manyOrNone(insertQuery);
 
       return {
         success: true,

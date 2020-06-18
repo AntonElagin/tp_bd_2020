@@ -41,27 +41,68 @@ module.exports = new class PostModel {
     }
   }
 
+  // async createPosts(postsArr) {
+  //   try {
+  //     const cs = new this._db.pgp.helpers.ColumnSet([
+  //       'author',
+  //       'forum',
+  //       'thread',
+  //       'created',
+  //       'message',
+  //       {
+  //         name: 'parent',
+  //         skip: function() {
+  //           const val = this['parent'];
+  //           return !val;
+  //         },
+  //       },
+  //     ], {table: 'posts'});
+
+  //     const insertQuery = this._db.pgp.helpers.insert(postsArr, cs) +
+  //          'returning *';
+
+  //     const data = await this._db.db.manyOrNone(insertQuery);
+  //     return {
+  //       success: true,
+  //       data,
+  //     };
+  //   } catch (err) {
+  //     console.error(`
+  //     [Posts] Create Posts error:
+  //     ${err.message}
+  //     `);
+  //     return {
+  //       success: false,
+  //       err,
+  //     };
+  //   }
+  // }
+
+
   async createPosts(postsArr) {
     try {
-      const cs = new this._db.pgp.helpers.ColumnSet([
-        'author',
-        'forum',
-        'thread',
-        'created',
-        'message',
-        {
-          name: 'parent',
-          skip: function() {
-            const val = this['parent'];
-            return !val;
+      const data = await this._db.db.task(
+          async (t) => {
+            const posts = [];
+            for (const post of postsArr) {
+              posts.push(
+                  await t.one(`
+            INSERT INTO posts (author, forum, thread, created, message, parent)
+            values($1, $2, $3, $4, $5, $6) returning *;
+          `, [
+                    post.author,
+                    post.forum,
+                    post.thread,
+                    post.created,
+                    post.message,
+            (post.parent) ? post.parent: null,
+                  ]),
+
+              );
+            }
+            return t.batch(posts);
           },
-        },
-      ], {table: 'posts'});
-
-      const insertQuery = this._db.pgp.helpers.insert(postsArr, cs) +
-           'returning *';
-
-      const data = await this._db.db.manyOrNone(insertQuery);
+      );
       return {
         success: true,
         data,

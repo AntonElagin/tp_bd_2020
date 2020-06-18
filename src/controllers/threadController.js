@@ -118,8 +118,8 @@ class ThreadController {
       }
     }
 
-    const authorSet = new Set();
-    const addUsersList = [];
+    // const authorSet = new Set();
+    // const addUsersList = [];
     for (const post of posts) {
       const author = await Users.getUserInfo(post.author);
 
@@ -129,14 +129,14 @@ class ThreadController {
         });
       }
 
-      if (!authorSet.has(author.data.nickname)) {
-        addUsersList.push({
-          forum_slug: threadExist.data.forum,
-          user_id: author.data.id,
-        });
+      // // if (!authorSet.has(author.data.nickname)) {
+      // //   addUsersList.push({
+      // //     forum_slug: threadExist.data.forum,
+      // //     user_nickname: author.data.nickname,
+      // //   });
 
-        authorSet.add(author.data.nickname);
-      }
+      // //   authorSet.add(author.data.nickname);
+      // }
       post.created = created;
       post.author= author.data.nickname;
       post.forum = threadExist.data.forum;
@@ -150,11 +150,11 @@ class ThreadController {
       return resp.status(500).end();
     }
 
-    const addedToForum = await Forums.addUsersToForum(addUsersList);
+    // const addedToForum = await Forums.addUsersToForum(addUsersList);
 
-    if (!addedToForum.success) {
-      return resp.status(500).end();
-    }
+    // if (!addedToForum.success) {
+    //   return resp.status(500).end();
+    // }
 
 
     const updatedForum = await Forums.updatePostsCount(
@@ -172,6 +172,9 @@ class ThreadController {
 
   static async updateThread(req, resp) {
     const thread = req.body;
+    if (thread.votes) {
+      throw new Error('suka bliad!');
+    }
     let id;
     let slug;
     if (/^\d+$/.test(req.params.key)) {

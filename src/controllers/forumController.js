@@ -66,6 +66,7 @@ class ForumController {
 
   static async addThread(req, resp) {
     const slug = req.params.slug;
+
     const threadData = req.body;
 
     const user = await Users.getUserInfo(threadData.author);
@@ -97,6 +98,7 @@ class ForumController {
       });
     }
 
+    threadData.created = threadData.created || new Date();
     const created = await Threads.createThreadAndOther(
         threadData,
         forum.data,
@@ -130,6 +132,7 @@ class ForumController {
     if (threads.success) {
       return resp.status(200).json(threads.data.map((elem) => {
         elem.id = +elem.id;
+        elem.votes = + elem.votes;
         return elem;
       }));
     }

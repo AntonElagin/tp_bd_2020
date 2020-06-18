@@ -18,7 +18,7 @@ app.use('/api/thread', threadRouter);
 app.use('/api/post', postRouter);
 app.use('/api/service', serviceRouter);
 
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 5001;
 app.listen(
     port,
     () => console.log('Forum API server is running on port: ', port),

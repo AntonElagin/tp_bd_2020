@@ -1,16 +1,22 @@
-FROM ubuntu:18.04
+FROM ubuntu:18.04 AS release_step
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 MAINTAINER Elagin Anton
-
-# Обновление списка пакетов
-RUN apt-get -y update
 
 #
 # Установка postgresql
 #
-ENV PGVER 10
-RUN apt-get install -y postgresql-$PGVER
+ENV PGVER 12
+RUN apt -y update && \
+    apt install -y wget gnupg && \
+    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
+    echo "deb http://apt.postgresql.org/pub/repos/apt/ bionic-pgdg main" >> /etc/apt/sources.list.d/pgdg.list && \
+    apt -y update
 
+RUN apt -y update && apt install -y \
+    postgresql-$PGVER \
+    && rm -rf /var/lib/apt/lists/*
 # Run the rest of the commands as the ``postgres`` user created by the ``postgres-$PGVER`` package when it was ``apt-get installed``
 USER postgres
 
@@ -40,10 +46,10 @@ USER root
 # Сборка проекта
 #
 
-RUN apt-get install -y curl
-RUN curl —silent —location https://deb.nodesource.com/setup_8.x | bash -
-RUN apt-get install -y nodejs
-RUN apt-get install -y build-essential
+RUN apt-get update -y && apt-get install -y curl
+RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
+RUN apt install -y nodejs
+RUN apt install -y build-essential
 
 COPY . /src
 WORKDIR /src

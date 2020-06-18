@@ -43,37 +43,77 @@ module.exports = new class ThreadModel {
   async createThreadAndOther(threadData = {}, forumData = {}, userData= {}) {
     {
       try {
-        const data = await this._db.db.multi(`
-        INSERT INTO threads (
-          slug, author, forum, 
-          created, title, message) 
-          VALUES ($1, $2, $3, $4, $5, $6) 
-          RETURNING author, created, forum,
-          id, message, title, slug;
-        
-        UPDATE forums SET 
-          threads = threads + 1
-          WHERE id = $8;
-        
-        INSERT INTO forum_users (forum_slug, user_id)
-          VALUES ($3, $7)
-          ON CONFLICT ON CONSTRAINT unique_user_in_forum
-          DO NOTHING;         
-          `,
-        [
-          threadData.slug,
-          userData.nickname,
-          forumData.slug,
-          threadData.created,
-          threadData.title,
-          threadData.message,
-          userData.id,
-          forumData.id,
-        ]);
-        return {
-          success: true,
-          data: data[0][0],
-        };
+        return await this._db.db.tx(
+            async (t) => {
+              const thread = await t.one(`
+            INSERT INTO threads (
+              slug, author, forum, 
+              created, title, message) 
+              VALUES ($1, $2, $3, $4, $5, $6) 
+              RETURNING author, created, forum, id,
+              message, title, slug;
+            `, [
+                threadData.slug,
+                userData.nickname,
+                forumData.slug,
+                threadData.created,
+                threadData.title,
+                threadData.message,
+              ]);
+
+              await t.none(`
+                UPDATE forums SET 
+                  threads = threads + 1
+                  WHERE slug = $1;
+            `, [forumData.slug]);
+
+              await t.none(`
+                INSERT INTO forum_users (forum_slug, user_nickname)
+                  VALUES ($1, $2)
+                  ON CONFLICT DO NOTHING;
+            `, [
+                thread.forum,
+                userData.nickname,
+              ]);
+
+              return {
+                success: true,
+                data: thread,
+              };
+            },
+        );
+
+
+        // await this._db.db.multi(`
+        // INSERT INTO threads (
+        //   slug, author, forum,
+        //   created, title, message)
+        //   VALUES ($1, $2, $3, $4, $5, $6)
+        //   RETURNING author, created, forum,
+        //   id, message, title, slug;
+
+        // UPDATE forums SET
+        //   threads = threads + 1
+        //   WHERE id = $8;
+
+        // INSERT INTO forum_users (forum_slug, user_nickname)
+        //   VALUES ($3, $2)
+        //   ON CONFLICT DO NOTHING;
+        //   `,
+        // [
+        //   threadData.slug,
+        //   userData.nickname,
+        //   forumData.slug,
+        //   threadData.created,
+        //   threadData.title,
+        //   threadData.message,
+        //   userData.id,
+        //   forumData.id,
+        // ]);
+        // return {
+        //   success: true,
+        //   data: data[0][0],
+        // };
       } catch (err) {
         console.error(`
       [Threads] Create thread and other error:
@@ -179,7 +219,7 @@ module.exports = new class ThreadModel {
         if (desc) {
           data = await this._db.db.manyOrNone(`
           Select created, id, message, slug, title ,
-          author, forum
+          author, forum, votes
           from threads
           where forum = $1 and created <= $2
           order by created DESC
@@ -246,6 +286,7 @@ module.exports = new class ThreadModel {
             id,
           ],
       );
+      console.log(thread);
       const updateUserQuery = this._db.pgp.helpers
           .update(thread, null, 'threads') + condition;
       const data = await this._db.db.one(updateUserQuery);
@@ -289,34 +330,6 @@ module.exports = new class ThreadModel {
     }
   }
 
-  async updateVotesCount(thread, count = 1) {
-    try {
-      const data = await this._db.db.one(`
-        Update threads
-        SET votes = $1
-        where id = $2
-        returning *
-      `, [
-        count,
-        thread.id,
-      ]);
-
-      return {
-        success: true,
-        data,
-      };
-    } catch (err) {
-      console.error(`
-      [Threads] Update votes count or thread error:
-      ${err.message}
-      `);
-
-      return {
-        success: false,
-        err,
-      };
-    }
-  }
 
   async getUserAndThread(nickname ='', slug = '', id = -1) {
     try {

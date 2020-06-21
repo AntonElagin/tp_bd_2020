@@ -1,7 +1,4 @@
 const Posts = require('../models/postModel');
-const Users = require('../models/userModel');
-const Threads = require('../models/threadModel');
-const Forums = require('../models/forumModel');
 
 
 class PostController {
@@ -51,82 +48,9 @@ class PostController {
     let related = req.query.related ? req.query.related.split(',') : [];
     related = (Array.isArray(related)) ? related: [related];
 
+    const result = await Posts.getPostDetailsTx(id, related);
 
-    const postExist = await Posts.getPostById(id);
-
-
-    if (!postExist) {
-      return resp.status(404).json({
-        message: `Can't find post with id '${id}'\n`,
-      });
-    }
-    const returnObj= {
-      post: {
-        author: postExist.author,
-        created: postExist.created,
-        forum: postExist.forum,
-        id: +postExist.id,
-        isEdited: postExist.isedited,
-        message: postExist.message,
-        thread: +postExist.thread,
-        parent: +postExist.parent,
-      },
-    };
-
-
-    if (related) {
-      for (const obj of related) {
-        switch (obj) {
-          case 'user':
-            const author = await Users.getUserByNickname(returnObj.post.author);
-
-
-            returnObj.author = {
-              about: author.about,
-              email: author.email,
-              fullname: author.fullname,
-              nickname: author.nickname,
-            };
-            break;
-          case 'forum':
-            const forum = await Forums.getForumDetails(returnObj.post.forum);
-
-            if (!forum) {
-              return resp.status(500).end();
-            }
-
-            returnObj.forum = {
-              posts: forum.posts,
-              slug: forum.slug,
-              threads: forum.threads,
-              title: forum.title,
-              user: forum.author,
-            };
-            break;
-          case 'thread':
-            const thread =
-              await Threads.getThreadById(postExist.thread);
-
-            if (!thread) {
-              return resp.status(500).end();
-            }
-
-            returnObj.thread = {
-              author: thread.author,
-              created: thread.created,
-              forum: thread.forum,
-              id: +thread.id,
-              slug: thread.slug,
-              message: thread.message,
-              title: thread.title,
-              votes: +thread.votes,
-            };
-            break;
-        }
-      }
-    }
-
-    return resp.status(200).json(returnObj);
+    return resp.status(result.status).json(result.data);
   }
 }
 

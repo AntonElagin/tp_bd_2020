@@ -1,9 +1,89 @@
 const {db, pgp} = require('../modules/db-config');
+const Users = require('./userModel');
 
 
 module.exports = new class PostModel {
   constructor() {
     this.db = db;
+  }
+
+  getPostDetailsTx(id, related) {
+    return this.db.tx(async (t) => {
+      const post = await this.getPostById(id, t);
+
+      if (!post) {
+        return {
+          status: 404,
+          data: {
+            message: `Can't find post with id '${id}'\n`,
+          },
+        };
+      }
+
+      post.id = +post.id;
+      post.thread = +post.thread;
+      post.parent = +post.parent;
+      post.isEdited = post.isedited;
+      delete(post.isedited);
+      const res = {
+        post,
+      };
+
+      for (const value of related) {
+        switch (value) {
+          case 'user':
+            const author = await Users.getUserByNickname(
+                post.author,
+                t,
+            );
+
+
+            res.author = author;
+            break;
+          case 'forum':
+            const forum = await this.getForumDetails(post.forum, t);
+
+            forum.posts = +forum.posts;
+            forum.user = forum.author;
+            delete(forum.author);
+            forum.threads = +forum.threads;
+            res.forum = forum;
+            break;
+          case 'thread':
+            const thread =
+              await this.getThreadById(post.thread, t);
+
+            thread.id = +thread.id;
+            thread.votes = +thread.votes;
+
+            res.thread = thread;
+            break;
+        }
+      }
+
+      return {
+        status: 200,
+        data: res,
+      };
+    });
+  }
+
+  async getForumDetails(forumSlug = '', db = this.db) {
+    return await db.oneOrNone(`Select * 
+      from forums
+      where slug = $1`, [
+      forumSlug,
+    ]);
+  }
+
+  async getThreadById(id = -1, db = this.db) {
+    return await this.db.oneOrNone(`
+    Select * from threads
+    where id = $1;
+    `,
+    [
+      id,
+    ]);
   }
 
   createPost(post, db = this.db) {
@@ -47,8 +127,8 @@ module.exports = new class PostModel {
     );
   }
 
-  async getPostById(id) {
-    return await this.db.oneOrNone(`
+  async getPostById(id, db = this.db) {
+    return await db.oneOrNone(`
         SELECT * from posts
         where id = $1
       `, [id]);
@@ -88,8 +168,9 @@ module.exports = new class PostModel {
     limit = 1000,
     desc = false,
     since = null,
+    db = this.db,
   } = {}) {
-    return await this.db.manyOrNone(`
+    return await db.manyOrNone(`
       SELECT * FROM posts
        WHERE thread = $1 
        $2:raw
@@ -106,6 +187,7 @@ module.exports = new class PostModel {
     limit = 1000,
     desc = false,
     since = null,
+    db = this.db,
   } = {}) {
     let whereCondition;
     if (since ) {
@@ -124,7 +206,7 @@ module.exports = new class PostModel {
         ]);
       }
     }
-    return await this.db.manyOrNone(`
+    return await db.manyOrNone(`
         SELECT * FROM posts
         WHERE thread = $1 $2:raw
         ORDER BY path $3:raw LIMIT $4`, [
@@ -139,6 +221,7 @@ module.exports = new class PostModel {
     limit = 1000,
     desc = false,
     since = null,
+    db = this.db,
   } = {}) {
     let subWhereCondition;
     if (since && desc) {
@@ -160,7 +243,7 @@ module.exports = new class PostModel {
          WHERE parent IS NULL 
         AND thread = $1  `, [threadId]);
     }
-    return await this.db.manyOrNone(`
+    return await db.manyOrNone(`
           SELECT * FROM posts JOIN
           (SELECT id AS sub_parent_id 
             FROM posts $1:raw ORDER BY id $5:raw LIMIT $4 ) AS sub 

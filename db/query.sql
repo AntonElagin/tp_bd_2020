@@ -20,14 +20,8 @@ IF NOT EXISTS users
     email       CITEXT      UNIQUE NOT NULL
 );
 
-
-
--- CREATE UNIQUE INDEX IF NOT EXISTS index_users_email
---     ON users (email);
-CREATE UNIQUE INDEX IF NOT EXISTS index_users_nickname
-    ON users (nickname);
-CREATE INDEX IF NOT EXISTS index_users_all
-    ON users (nickname, email, about, fullname);
+CREATE INDEX if NOT EXISTS index_users_full 
+    ON users (nickname, email, fullname, about);
 
 -- Forums table and indexes
 
@@ -44,8 +38,8 @@ IF NOT EXISTS forums
     FOREIGN KEY (author) REFERENCES users (nickname)
 );
 
-CREATE INDEX IF NOT EXISTS index_forums_slug 
-    ON forums (slug, title, author, posts, threads);
+CREATE INDEX if NOT EXISTS index_forums_slug 
+    ON forums (slug);
 
 
 -- Threads table and indexes
@@ -70,15 +64,8 @@ IF NOT EXISTS threads
     FOREIGN KEY (forum) REFERENCES forums (slug)
 );
 
-CREATE INDEX
-IF NOT EXISTS index_threads_slug ON threads
-(slug);
-CREATE INDEX
-IF NOT EXISTS index_threads_id ON threads (id);
-CREATE INDEX
-IF NOT EXISTS index_threads_double ON threads
-(forum,created);
-
+CREATE INDEX if NOT EXISTS index_threads_id
+    ON threads (forum, created);
 
 -- Threads table and indexes
 
@@ -102,14 +89,11 @@ IF NOT EXISTS posts
     FOREIGN KEY (thread) REFERENCES threads (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_posts_path ON posts USING GIN (path);
-CREATE INDEX IF NOT EXISTS idx_posts_forum ON posts (forum);
-CREATE INDEX IF NOT EXISTS idx_posts_parent ON posts (parent);
-CREATE INDEX IF NOT EXISTS idx_posts_thread_id ON posts (thread, id);
-CREATE INDEX IF NOT EXISTS idx_posts_full
-    ON posts (id, parent, thread, forum, author, created, message, isedited, path);
-CREATE INDEX IF NOT EXISTS idx_posts_created
-    ON posts (created);
+CREATE INDEX if NOT EXISTS index_posts_thread_id
+    ON posts (thread, id);
+CREATE INDEX if NOT EXISTS index_posts_path1_id
+    ON posts (path[1], thread, id);
+
 
 -- Votes table and indexes
 
@@ -131,7 +115,6 @@ IF NOT EXISTS votes
     CONSTRAINT votes_pk PRIMARY KEY (thread, nickname)
 );
 
-CREATE INDEX IF NOT EXISTS index_votes_double ON votes (nickname, thread);
 
 
 -- Forum_users table and indexes
@@ -151,7 +134,8 @@ IF NOT EXISTS forum_users
     CONSTRAINT forums_users_nicknames_pk PRIMARY KEY (forum_slug, user_nickname)
 );
 
-CREATE INDEX IF NOT EXISTS index_forum_users_double ON forum_users (user_nickname, forum_slug);
+
+
 
 CREATE OR REPLACE FUNCTION add_path_to_post()
 RETURNS TRIGGER AS $add_path_to_post$
@@ -245,14 +229,6 @@ CREATE TRIGGER add_new_forum_user_after_insert_in_threads
     FOR EACH ROW
 EXECUTE PROCEDURE add_new_forum_user();
 
-
--- CREATE OR REPLACE FUNCTION add_posts_into_forums() RETURNS TRIGGER AS
--- $add_posts_into_forums$
--- BEGIN
---     UPDATE forums 
---     SET posts = posts 
--- END
--- $add_posts_into_forums$ LANGUAGE plpgsql;
 
 
 ANALYZE;

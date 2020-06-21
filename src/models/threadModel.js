@@ -7,6 +7,66 @@ module.exports = new class ThreadModel {
     this.db = db;
   }
 
+  getThreadPostsTx(slug, id, getParams) {
+    return this.db.tx(async (t) => {
+      const thread = await this.getThreadBySlugOrId(slug, id, t);
+
+      if (!thread) {
+        return {
+          status: 404,
+          data: {
+            message: `Can't find thread with slug or id '${slug || id}'\n`,
+          },
+        };
+      }
+
+      getParams.db = t;
+      let posts;
+      switch (getParams.sort) {
+        case 'parent_tree':
+          posts = await Posts.getPostsbytThreadWithTreeWithParentSort(
+              thread.id,
+              getParams,
+          );
+
+          break;
+        case 'tree':
+          posts = await Posts.getPostsbytThreadWithTreeSort(
+              thread.id,
+              getParams,
+          );
+
+          break;
+        case 'flat':
+        default:
+          posts = await Posts.getPostsbytThreadWithFlatSort(
+              thread.id,
+              getParams,
+          );
+      }
+
+      const returnArray = [];
+      for (const post of posts) {
+        returnArray.push({
+          author: post.author,
+          created: post.created,
+          forum: post.forum,
+          id: +post.id,
+          isEdited: post.isedited,
+          message: post.message,
+          parent: +post.parent,
+          thread: +post.thread,
+        });
+      }
+
+      return {
+        status: 200,
+        data: returnArray,
+      };
+    });
+  }
+
+
   async updatePostsCount(slug = -1, count = 1, db = this.db) {
     return await db.one(`UPDATE forums SET 
       posts = posts + $1

@@ -1,5 +1,4 @@
 const Threads = require('../models/threadModel');
-const Posts = require('../models/postModel');
 const Votes = require('../models/voteModel');
 
 const threadTemplate = (val) => {
@@ -167,62 +166,9 @@ class ThreadController {
       id = null;
     }
 
-    const threadExist = await Threads.getThreadBySlugOrId(slug, id);
+    const result = await Threads.getThreadPostsTx(slug, id, getParams);
 
-    if (!threadExist) {
-      return resp.status(404).json({
-        message: `Can't find thread with id or slug '${slug || id}'`,
-      });
-    }
-
-
-    let posts;
-    switch (getParams.sort) {
-      case 'parent_tree':
-        posts = await Posts.getPostsbytThreadWithTreeWithParentSort(
-            threadExist.id,
-            getParams,
-        );
-
-        break;
-      case 'tree':
-        posts = await Posts.getPostsbytThreadWithTreeSort(
-            threadExist.id,
-            getParams,
-        );
-
-        break;
-      case 'flat':
-      default:
-        posts = await Posts.getPostsbytThreadWithFlatSort(
-            threadExist.id,
-            getParams,
-        );
-    }
-
-    if (!posts) {
-      return resp.status(500).end();
-    }
-
-    if (posts && posts.length === 0 ) {
-      return resp.status(200).json([]);
-    }
-
-    const returnArray = [];
-    for (const post of posts) {
-      returnArray.push({
-        author: post.author,
-        created: post.created,
-        forum: post.forum,
-        id: +post.id,
-        isEdited: post.isedited,
-        message: post.message,
-        parent: +post.parent,
-        thread: +post.thread,
-      });
-    }
-
-    return resp.status(200).json(returnArray);
+    return resp.status(result.status).json(result.data);
   }
 }
 

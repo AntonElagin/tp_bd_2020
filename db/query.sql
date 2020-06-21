@@ -17,7 +17,7 @@ IF NOT EXISTS users
     nickname    CITEXT PRIMARY KEY UNIQUE NOT NULL,
     fullname    VARCHAR NOT NULL,
     about       TEXT NOT NULL,
-    email       CITEXT UNIQUE NOT NULL
+    email       CITEXT      UNIQUE NOT NULL
 );
 
 
@@ -95,6 +95,7 @@ IF NOT EXISTS posts
     path   BIGINT[],
 
     FOREIGN KEY (author) REFERENCES users (nickname),
+    FOREIGN KEY (parent) REFERENCES posts (id),
     FOREIGN KEY (forum) REFERENCES forums (slug),
     FOREIGN KEY (thread) REFERENCES threads (id)
 );
@@ -118,10 +119,12 @@ IF NOT EXISTS votes
     nickname        CITEXT      NOT NULL,
     thread          BIGINT      NOT NULL,
     voice           INTEGER     NOT NULL,
-    
-    FOREIGN KEY (nickname) REFERENCES users (nickname)
+    FOREIGN KEY (thread) REFERENCES threads (id)
+        ON DELETE CASCADE
         ON UPDATE CASCADE,
-    FOREIGN KEY (thread) REFERENCES threads (id),
+    FOREIGN KEY (nickname) REFERENCES users (nickname)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
     
     UNIQUE (thread, nickname),
     CONSTRAINT votes_pk PRIMARY KEY (thread, nickname)
@@ -155,15 +158,21 @@ DECLARE
         parent_path BIGINT[];
 BEGIN
     IF (NEW.parent IS NULL) OR (NEW.parent = 0) THEN
-            NEW.path := NEW.path || NEW.id;
-        ELSE
-            SELECT path
-    FROM posts
-    WHERE id = NEW.parent
-    INTO parent_path;
-NEW.path := NEW.path || parent_path || NEW.id;
-END
-IF;
+        NEW.path := NEW.path || NEW.id;
+    ELSE
+        SELECT path
+        FROM posts
+            WHERE id = NEW.parent AND thread = NEW.thread
+        INTO parent_path;
+
+        IF ((parent_path IS NULL)
+            OR
+            (array_length(parent_path, 1) = 0)) THEN
+            RAISE EXCEPTION 'parent error';
+        END IF;
+
+        NEW.path := NEW.path || parent_path || NEW.id;
+    END IF;
         RETURN NEW;
 END;
 $add_path_to_post$ LANGUAGE  plpgsql;
@@ -235,3 +244,15 @@ CREATE TRIGGER add_new_forum_user_after_insert_in_threads
     FOR EACH ROW
 EXECUTE PROCEDURE add_new_forum_user();
 
+
+-- CREATE OR REPLACE FUNCTION add_posts_into_forums() RETURNS TRIGGER AS
+-- $add_posts_into_forums$
+-- BEGIN
+--     UPDATE forums 
+--     SET posts = posts 
+-- END
+-- $add_posts_into_forums$ LANGUAGE plpgsql;
+
+
+ANALYZE;
+VACUUM ANALYZE;

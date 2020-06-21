@@ -1,7 +1,5 @@
-const Users = require('../models/userModel');
 const Threads = require('../models/threadModel');
 const Posts = require('../models/postModel');
-const Forums = require('../models/forumModel');
 const Votes = require('../models/voteModel');
 
 const threadTemplate = (val) => {
@@ -73,88 +71,14 @@ class ThreadController {
       id = null;
     }
 
-    const created = new Date();
-    const threadExist = await Threads.getThreadBySlugOrId(slug, id);
+    const result = await Threads.createPostsTx(slug, id, posts);
 
-    if (!threadExist) {
-      return resp.status(404).json({
-        message: `Can't find thread with slugx or id  '${slug || id}'\n`,
-      });
+    switch (result.status) {
+      case 201:
+        return resp.status(result.status).json(postsTemplate(result.data));
+      default:
+        return resp.status(result.status).json(result.data);
     }
-
-    if (posts.length === 0) {
-      return resp.status(201).json([]);
-    }
-
-    const parentIdList = [];
-    for (const post of posts) {
-      if (post.parent) {
-        parentIdList.push({
-          thread_id: threadExist.id,
-          id: post.parent,
-        });
-        const postParent = await Posts.getPostByIdAndThread(
-            post.parent,
-            threadExist,
-        );
-
-        if (!postParent) {
-          return resp.status(409).json({
-            message: `Can't find parent post with id '${post.parent}'`,
-          });
-        }
-
-
-        if (!postParent) {
-          return resp.status(500).end();
-        }
-      }
-    }
-
-    // const authorSet = new Set();
-    // const addUsersList = [];
-    for (const post of posts) {
-      const author = await Users.getUserByNickname(post.author);
-
-      if (!author) {
-        return resp.status(404).json({
-          message: `Can't find author with nickname '${post.author}'`,
-        });
-      }
-
-      // // if (!authorSet.has(author.data.nickname)) {
-      // //   addUsersList.push({
-      // //     forum_slug: threadExist.data.forum,
-      // //     user_nickname: author.data.nickname,
-      // //   });
-
-      // //   authorSet.add(author.data.nickname);
-      // }
-      post.created = created;
-      post.author= author.nickname;
-      post.forum = threadExist.forum;
-      post.thread = threadExist.id;
-      post.parent = post.parent || null;
-    }
-
-    const postsInsert = await Posts.createPosts(posts);
-
-    if (!postsInsert) {
-      return resp.status(500).end();
-    }
-
-
-    const updatedForum = await Forums.updatePostsCount(
-        threadExist.forum,
-        posts.length,
-    );
-
-
-    if (!(updatedForum)) {
-      return resp.status(500).end();
-    }
-
-    return resp.status(201).json(postsTemplate(postsInsert));
   }
 
   static async updateThread(req, resp) {

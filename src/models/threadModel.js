@@ -1,8 +1,87 @@
 const db = require('../modules/db-config').db;
+const Posts = require('./postModel');
+// const Forums = require('./forumModel');
 
 module.exports = new class ThreadModel {
   constructor() {
     this.db = db;
+  }
+
+  async updatePostsCount(slug = -1, count = 1, db = this.db) {
+    return await db.one(`UPDATE forums SET 
+      posts = posts + $1
+      WHERE slug = $2
+      RETURNING *`, [count, slug]);
+  }
+
+  createPostsTx(slug, id, posts) {
+    return this.db.task(async (t) => {
+      const thread = await this.getThreadBySlugOrId(slug, id, t);
+
+      if (!thread) {
+        return {
+          status: 404,
+          data: {
+            message: `Can't find thread with id or slug '${slug || id}'\n`,
+          },
+        };
+      }
+
+      if (posts.length === 0) {
+        return {
+          status: 201,
+          data: [],
+        };
+      }
+
+      const arr = [];
+      const created = new Date();
+      for (const post of posts) {
+        post.created = created;
+        post.forum = thread.forum;
+        post.thread = thread.id;
+        arr.push(
+            await Posts.createPost(post, t),
+        );
+      }
+
+      await this.updatePostsCount(thread.forum, arr.length, t);
+
+      return {
+        status: 201,
+        data: arr,
+      };
+    }).catch((err) => {
+      console.log(err);
+      if (err.message === 'parent error') {
+        return {
+          status: 409,
+          data: {
+            message: `Can't find forum by slug`,
+          },
+        };
+      }
+      if (err.constraint === 'posts_parent_fkey') {
+        return {
+          status: 404,
+          data: {
+            message: `Can't find forum by slug`,
+          },
+        };
+      }
+      if (err.constraint === 'posts_author_fkey') {
+        return {
+          status: 404,
+          data: {
+            message: `Can't find forum by slug`,
+          },
+        };
+      }
+      return {
+        status: 500,
+        data: err,
+      };
+    });
   }
 
   async createThread(
@@ -162,13 +241,6 @@ module.exports = new class ThreadModel {
         (thread.title)? `'${thread.title}'` : 'title',
         id,
     ]);
-  }
-
-  async updatePostsCount(id = -1, count = 1, db = this.db) {
-    return await db.one(`UPDATE threads SET 
-      posts = posts + $1
-      WHERE id = $2
-      RETURNING *`, [count, id]);
   }
 
 

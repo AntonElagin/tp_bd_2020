@@ -6,6 +6,21 @@ module.exports = new class PostModel {
     this.db = db;
   }
 
+  createPost(post, db = this.db) {
+    return db.one(`
+      INSERT INTO posts (author, forum, thread,
+        created, message, parent)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *;
+    `, [
+      post.author,
+      post.forum,
+      post.thread,
+      post.created,
+      post.message,
+      (post.parent) ? post.parent: null,
+    ]);
+  }
 
   async createPosts(postsArr) {
     return await this.db.task(

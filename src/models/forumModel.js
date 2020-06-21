@@ -195,12 +195,6 @@ module.exports = new class ForumModel {
       RETURNING *`, [count, id]);
   }
 
-  async updatePostsCount(slug = -1, count = 1) {
-    return await this.db.one(`UPDATE forums SET 
-      posts = posts + $1
-      WHERE slug = $2
-      RETURNING *`, [count, slug]);
-  }
 
   async addUserToForum(user, forum) {
     return await this.db.oneOrNone(`

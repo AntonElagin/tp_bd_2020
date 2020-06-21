@@ -1,26 +1,23 @@
 CREATE EXTENSION
 IF NOT EXISTS CITEXT;
 
-DROP TABLE IF EXISTS users
-CASCADE;
-DROP TABLE IF EXISTS forums
-CASCADE;
-DROP TABLE IF EXISTS threads
-CASCADE;
-DROP TABLE IF EXISTS posts
-CASCADE;
-DROP TABLE IF EXISTS votes
-CASCADE;
-DROP TABLE IF EXISTS forum_users
-CASCADE;
+-- DROP TABLE IF EXISTS users CASCADE;
+-- DROP TABLE IF EXISTS forums CASCADE;
+-- DROP TABLE IF EXISTS threads CASCADE;
+-- DROP TABLE IF EXISTS posts CASCADE;
+-- DROP TABLE IF EXISTS votes CASCADE;
+-- DROP TABLE IF EXISTS forum_users CASCADE;
+
+-- Users table and users indexes
+
 
 CREATE UNLOGGED TABLE
 IF NOT EXISTS users
 (
     nickname    CITEXT PRIMARY KEY UNIQUE NOT NULL,
-    fullname    VARCHAR,
-    about       TEXT,
-    email       CITEXT      UNIQUE
+    fullname    VARCHAR NOT NULL,
+    about       TEXT NOT NULL,
+    email       CITEXT UNIQUE NOT NULL
 );
 
 
@@ -32,6 +29,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS index_users_nickname
 CREATE INDEX IF NOT EXISTS index_users_all
     ON users (nickname, email, about, fullname);
 
+-- Forums table and indexes
 
 
 CREATE UNLOGGED TABLE
@@ -40,12 +38,18 @@ IF NOT EXISTS forums
     slug    CITEXT PRIMARY KEY UNIQUE NOT NULL,
     title   VARCHAR     NOT NULL,
     author    CITEXT      NOT NULL,
-    posts   INTEGER     DEFAULT 0,
-    threads INTEGER     DEFAULT 0
+    posts   INTEGER     DEFAULT 0 NOT NULL,
+    threads INTEGER     DEFAULT 0 NOT NULL,
+
+    FOREIGN KEY (author) REFERENCES users (nickname)
 );
 
 CREATE INDEX IF NOT EXISTS index_forums_slug 
     ON forums (slug);
+
+
+-- Threads table and indexes
+
 
 CREATE UNLOGGED TABLE
 IF NOT EXISTS threads
@@ -54,10 +58,16 @@ IF NOT EXISTS threads
     slug            CITEXT     UNIQUE,
     author          CITEXT     NOT NULL,
     forum           CITEXT     NOT NULL,
-    created         TIMESTAMP WITH TIME ZONE    DEFAULT NOW(),
+    created         TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     title           VARCHAR    NOT NULL,
     message         VARCHAR    NOT NULL,
-    votes           INTEGER    DEFAULT 0 NOT NULL
+    votes           INTEGER    DEFAULT 0 NOT NULL,
+
+
+    FOREIGN KEY (author) REFERENCES users (nickname)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (forum) REFERENCES forums (slug)
 );
 
 CREATE INDEX
@@ -68,18 +78,25 @@ IF NOT EXISTS index_threads_id ON threads
 (id);
 
 
+-- Threads table and indexes
+
+
 CREATE UNLOGGED TABLE
 IF NOT EXISTS posts
 (
     id        BIGSERIAL PRIMARY KEY UNIQUE NOT NULL,
     author    CITEXT    NOT NULL ,
     forum     CITEXT    NOT NULL ,
-    thread    CITEXT    NOT NULL,
+    thread    BIGINT    NOT NULL,
     created   TIMESTAMP WITH TIME ZONE    DEFAULT NOW(),
     isEdited  BOOLEAN   DEFAULT FALSE,
     message   VARCHAR   NOT NULL,
     parent    BIGINT    NULL,
-    path   BIGINT[]
+    path   BIGINT[],
+
+    FOREIGN KEY (author) REFERENCES users (nickname),
+    FOREIGN KEY (forum) REFERENCES forums (slug),
+    FOREIGN KEY (thread) REFERENCES threads (id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_posts_path ON posts USING GIN (path);
@@ -92,29 +109,39 @@ CREATE INDEX IF NOT EXISTS idx_posts_pok
 CREATE INDEX IF NOT EXISTS idx_posts_created
     ON posts (created);
 
+-- Votes table and indexes
+
+
 CREATE UNLOGGED TABLE
 IF NOT EXISTS votes
 (
     nickname        CITEXT      NOT NULL,
     thread          BIGINT      NOT NULL,
-    voice           INTEGER     DEFAULT 0,
-    FOREIGN KEY (thread) REFERENCES threads (id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-    FOREIGN KEY (nickname) REFERENCES users (nickname)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
+    voice           INTEGER     NOT NULL,
     
-    CONSTRAINT votes_unique UNIQUE (thread, nickname)
+    FOREIGN KEY (nickname) REFERENCES users (nickname)
+        ON UPDATE CASCADE,
+    FOREIGN KEY (thread) REFERENCES threads (id),
+    
+    UNIQUE (thread, nickname),
+    CONSTRAINT votes_pk PRIMARY KEY (thread, nickname)
 );
 
 CREATE INDEX IF NOT EXISTS index_votes_double ON votes (nickname, thread);
+
+
+-- Forum_users table and indexes
+
+
 
 CREATE UNLOGGED TABLE
 IF NOT EXISTS forum_users
 (
 	forum_slug      CITEXT     NOT NULL ,
 	user_nickname   CITEXT     NOT NULL ,
+
+    FOREIGN KEY (forum_slug) REFERENCES forums (slug),
+    FOREIGN KEY (user_nickname) REFERENCES users (nickname),
 	
     UNIQUE (forum_slug, user_nickname),
     CONSTRAINT forums_users_nicknames_pk PRIMARY KEY (forum_slug, user_nickname)
@@ -141,54 +168,56 @@ IF;
 END;
 $add_path_to_post$ LANGUAGE  plpgsql;
 
-DROP TRIGGER IF EXISTS tr_add_path_to_post
-ON posts;
+-- DROP TRIGGER IF EXISTS tr_add_path_to_post
+-- ON posts;
 
 CREATE TRIGGER tr_add_path_to_post before
 INSERT ON posts FOR EACH ROW
 EXECUTE PROCEDURE add_path_to_post();
 
+--  insert_votes
 
--- DROP FUNCTION IF EXISTS insert_vote() CASCADE;
--- CREATE OR REPLACE FUNCTION insert_vote() RETURNS TRIGGER AS
--- $insert_vote$
--- BEGIN
---     UPDATE threads
---     SET votes = votes + NEW.voice
---     WHERE id = NEW.thread;
+-- DROP FUNCTION IF EXISTS insert_votes() CASCADE;
+CREATE OR REPLACE FUNCTION insert_votes() RETURNS TRIGGER AS
+$insert_votes$
+BEGIN
+    UPDATE threads
+    SET votes = votes + NEW.voice
+    WHERE id = NEW.thread;
 
---     RETURN NULL;
--- END;
--- $insert_vote$ LANGUAGE plpgsql;
+    RETURN NULL;
+END;
+$insert_votes$ LANGUAGE plpgsql;
 
--- CREATE TRIGGER insert_vote_after_insert_on_threads
---     AFTER INSERT
---     ON votes
---     FOR EACH ROW
--- EXECUTE PROCEDURE insert_vote();
+CREATE TRIGGER insert_vote_after_insert_on_threads
+    AFTER INSERT
+    ON votes
+    FOR EACH ROW
+EXECUTE PROCEDURE insert_votes();
 
--- --
+-- update_votes
 
--- DROP FUNCTION IF EXISTS update_vote() CASCADE;
--- CREATE OR REPLACE FUNCTION update_vote() RETURNS TRIGGER AS
--- $update_vote$
--- BEGIN
---     UPDATE threads
---     SET votes = votes + NEW.voice - OLD.voice
---     WHERE id = NEW.thread;
+-- DROP FUNCTION IF EXISTS update_votes() CASCADE;
+CREATE OR REPLACE FUNCTION update_votes() RETURNS TRIGGER AS
+$update_votes$
+BEGIN
+    UPDATE threads
+    SET votes = votes + NEW.voice - OLD.voice
+    WHERE id = NEW.thread;
 
---     RETURN NULL;
--- END;
--- $update_vote$ LANGUAGE plpgsql;
+    RETURN NULL;
+END;
+$update_votes$ LANGUAGE plpgsql;
 
--- CREATE TRIGGER update_vote_after_insert_on_threads
---     AFTER UPDATE
---     ON votes
---     FOR EACH ROW
--- EXECUTE PROCEDURE update_vote();
+CREATE TRIGGER update_vote_after_insert_on_threads
+    AFTER UPDATE
+    ON votes
+    FOR EACH ROW
+EXECUTE PROCEDURE update_votes();
 
+--
 
-DROP FUNCTION IF EXISTS add_new_forum_user() CASCADE;
+-- DROP FUNCTION IF EXISTS add_new_forum_user() CASCADE;
 CREATE OR REPLACE FUNCTION add_new_forum_user() RETURNS TRIGGER AS
 $add_forum_user$
 BEGIN
@@ -206,6 +235,3 @@ CREATE TRIGGER add_new_forum_user_after_insert_in_threads
     FOR EACH ROW
 EXECUTE PROCEDURE add_new_forum_user();
 
-
-ANALYZE;
-VACUUM ANALYZE;

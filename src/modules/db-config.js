@@ -1,4 +1,4 @@
-const DatabaseModule = require('./db-pgsql');
+const pgp = require('pg-promise')();
 
 // Database connection details;
 const connOptions = {
@@ -9,6 +9,8 @@ const connOptions = {
   password: 'docker',
 };
 
-const dbConfig = new DatabaseModule(connOptions);
 
-module.exports = dbConfig;
+module.exports = {
+  db: pgp(connOptions),
+  pgp,
+};

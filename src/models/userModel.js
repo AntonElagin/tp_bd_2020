@@ -1,109 +1,153 @@
-const db = require('../modules/db-config');
+const {db, pgp} = require('../modules/db-config');
 
 module.exports = new class UserModel {
   constructor() {
-    this._db = db;
+    this.db = db;
   }
 
-  async createNewUser(userData) {
-    try {
-      const data = await this._db.db.one(`
-      Insert into users (nickname ,about, email, fullname)
-      values ($1, $2, $3, $4) returning *;
+  updateUserTx(nickname = '', userData ={}) {
+    return this.db.tx(async (t) => {
+      const userExist = await this.getUserByNickname(nickname, t);
+
+      if (!userExist) {
+        return {
+          status: 404,
+          data: {
+            message: `Can't find user with nickname '${nickname}'\n`,
+          },
+        };
+      }
+
+      if (Object.keys(userData).length === 0) {
+        return {
+          status: 200,
+          data: userExist,
+        };
+      }
+
+      // const dataConflict = await this.getUserByNicknameOrEmail(
+      //     userData.nickname,
+      //     userData.email,
+      //     t,
+      // );
+
+      // if (dataConflict.length > 0) {
+      //   return {
+      //     status: 409,
+      //     data: dataConflict,
+      //   };
+      // }
+
+      const updatedUser = await this.updateUserProfile(
+          nickname,
+          userData,
+          t,
+      );
+
+      return {
+        status: 200,
+        data: updatedUser,
+      };
+    })
+        .catch((err) => {
+          console.log(err);
+          if (err.constraint === 'users_email_key') {
+            return {
+              status: 409,
+              data: {
+                message: `Conflict email`,
+              },
+            };
+          }
+          if (err.constraint === 'users_nickname_key') {
+            return {
+              status: 409,
+              data: {
+                message: `Conflict nickname`,
+              },
+            };
+          }
+          return {
+            status: 500,
+            data: err,
+          };
+        });
+  }
+
+  createUserTx(userData) {
+    return this.db.tx(async (t) => {
+      const dataExist = await this.getUserByNicknameOrEmail(
+          userData.nickname,
+          userData.email,
+          t,
+      );
+
+      if (dataExist.length > 0) {
+        return {
+          status: 409,
+          user: dataExist,
+        };
+      }
+
+      const newUser = await this.createUser(
+          userData.nickname,
+          userData.email,
+          userData.about,
+          userData.fullname,
+          t,
+      );
+
+      return {
+        status: 201,
+        user: newUser,
+      };
+    });
+  }
+
+  async createUser(nickname, about, email, fullname, db = this.db) {
+    return await db.one(`
+    INSERT INTO users
+    (nickname, email, about, fullname)
+    VALUES ($1, $2, $3, $4)
+    RETURNING *;
     `, [
-        userData.nickname, userData.about,
-        userData.email, userData.fullname,
-      ]);
-      return {
-        success: true,
-        data,
-      };
-    } catch (err) {
-      console.error(`
-      [Users] Create User error:
-      ${err.message}
-      `);
-      return {
-        success: false,
-        err,
-      };
-    }
+      nickname,
+      about,
+      email,
+      fullname,
+    ]);
   }
 
-  async getUserInfo(userNickname = '') {
-    try {
-      const data = await this._db.db.oneOrNone(`
+  async getUserByNickname(nickname = '', db = this.db) {
+    return await db.oneOrNone(`
       Select * from users
       where nickname = $1
-    `, [userNickname]);
-      return {
-        success: true,
-        data,
-      };
-    } catch (err) {
-      console.error(`
-      [Users] Get Users error:
-      ${err.message}
-      `);
-      return {
-        success: false,
-        err,
-      };
-      return {
-        success: false,
-        err,
-      };
-    }
+    `, [
+      nickname,
+    ]);
   }
 
-  async updateUserProfile(nickname = '', userData = {}) {
-    try {
-      const condition = this._db.pgp.as.format(
-          ' WHERE nickname = $1 Returning *',
-          [
-            nickname,
-          ],
-      );
-      const updateUserQuery = this._db.pgp.helpers
-          .update(userData, null, 'users') + condition;
-      const data = await this._db.db.one(updateUserQuery);
-      return {
-        success: true,
-        data,
-      };
-    } catch (err) {
-      console.error(`
-      [Users] Update User error:
-      ${err.message}
-      `);
-      return {
-        success: false,
-        err,
-      };
-    }
+  async updateUserProfile(nickname = '', userData = {}, db = this.db) {
+    const condition = pgp.as.format(
+        ' WHERE nickname = $1 Returning *',
+        [
+          nickname,
+        ],
+    );
+    const updateUserQuery = pgp.helpers
+        .update(userData, null, 'users') + condition;
+    return await db.one(updateUserQuery);
   }
 
-  async getUserByNicknameOrEmail(nickname = '', email = '') {
-    try {
-      const data = await this._db.db.manyOrNone(`
-      Select nickname, fullname, about, email from users
-      where nickname = $1 or email = $2
-    `, [nickname, email]);
-      return {
-        success: true,
-        data,
-      };
-    } catch (err) {
-      console.error(`
-      [Users] Get user by nick or email error:
-      ${err.message}
-      `);
-
-      return {
-        success: false,
-        err,
-      };
-    }
+  getUserByNicknameOrEmail(nickname = '', email = '', db = this.db) {
+    return db.manyOrNone(`
+    SELECT * 
+    FROM users
+    WHERE nickname = $1 OR email = $2;
+    `, [
+      nickname,
+      email,
+    ]);
   }
 
   async getUsersByForum(forum = {},
@@ -111,12 +155,12 @@ module.exports = new class UserModel {
         limit = 1000,
         since = '',
         desc = false,
+        db = this.db,
       } = {}) {
-    try {
-      let data;
-      if (since) {
-        if (desc) {
-          data =await this._db.db.manyOrNone(`
+    let data;
+    if (since) {
+      if (desc) {
+        data =await db.manyOrNone(`
         SELECT about, email, fullname, nickname
         from users as u
         join forum_users as f ON u.nickname = f.user_nickname
@@ -124,12 +168,12 @@ module.exports = new class UserModel {
         order by nickname DESC
         limit $3
       `, [
-            forum.slug,
-            since,
-            +limit,
-          ]);
-        } else {
-          data = await this._db.db.manyOrNone(`
+          forum.slug,
+          since,
+          +limit,
+        ]);
+      } else {
+        data = await db.manyOrNone(`
         SELECT about, email, fullname, nickname
         from users as u
         join forum_users as f ON u.nickname = f.user_nickname
@@ -137,13 +181,13 @@ module.exports = new class UserModel {
         order by nickname ASC
         limit $3
       `, [
-            forum.slug,
-            since,
-            +limit,
-          ]);
-        }
-      } else {
-        data = await this._db.db.manyOrNone(`
+          forum.slug,
+          since,
+          +limit,
+        ]);
+      }
+    } else {
+      data = await db.manyOrNone(`
           SELECT about, email, fullname, nickname
           from users as u
           join forum_users as f ON u.nickname = f.user_nickname
@@ -151,24 +195,11 @@ module.exports = new class UserModel {
           order by nickname $2:raw
           limit $3
         `, [
-          forum.slug,
+        forum.slug,
            (desc) ? 'desc': 'asc',
            +limit]);
-      }
-
-      return {
-        success: true,
-        data,
-      };
-    } catch (err) {
-      console.error(`
-      [Users] Get users of forum error:
-      ${err.message}
-      `);
-      return {
-        success: false,
-        err,
-      };
     }
+
+    return data;
   }
 };

@@ -1,16 +1,17 @@
 const express = require('express');
+const asyncHandler = require('express-async-handler');
 const threadRouter = express.Router();
 const ThreadController = require('../controllers/threadController');
 
-threadRouter.post('/:key/create', ThreadController.createPost);
+threadRouter.post('/:key/create', asyncHandler(ThreadController.createPost));
 
-threadRouter.get('/:key/details', ThreadController.getThreadInfo);
+threadRouter.get('/:key/details', asyncHandler(ThreadController.getThreadInfo));
 
-threadRouter.post('/:key/details', ThreadController.updateThread);
+threadRouter.post('/:key/details', asyncHandler(ThreadController.updateThread));
 
-threadRouter.get('/:key/posts', ThreadController.getThreadPosts);
+threadRouter.get('/:key/posts', asyncHandler(ThreadController.getThreadPosts));
 
-threadRouter.post('/:key/vote', ThreadController.vote);
+threadRouter.post('/:key/vote', asyncHandler(ThreadController.vote));
 
 module.exports = threadRouter;
 

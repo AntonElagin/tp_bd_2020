@@ -11,7 +11,7 @@ class PostController {
 
     const postExist = await Posts.getPostById(id);
 
-    if (postExist.success && !postExist.data) {
+    if (!postExist) {
       return resp.status(404).json({
         message: `Can't find post with id ${id}`,
       });
@@ -19,33 +19,31 @@ class PostController {
 
     if (!message) {
       return resp.status(200).json({
-        author: postExist.data.author,
-        created: postExist.data.created,
-        forum: postExist.data.forum,
-        id: +postExist.data.id,
-        message: postExist.data.message,
-        thread: +postExist.data.thread,
+        author: postExist.author,
+        created: postExist.created,
+        forum: postExist.forum,
+        id: +postExist.id,
+        message: postExist.message,
+        thread: +postExist.thread,
       });
     }
 
     const updatedPost = await Posts.updatePostMessage(id, message);
 
-    if (updatedPost.success) {
-      if (updatedPost.data) {
-        updatedPost.data.id = +updatedPost.data.id;
-        updatedPost.data.thread = +updatedPost.data.thread;
-        return resp.status(200).json(updatedPost.data);
-      }
-      return resp.status(200).json({
-        author: postExist.data.author,
-        created: postExist.data.created,
-        forum: postExist.data.forum,
-        id: +postExist.data.id,
-        message: postExist.data.message,
-        thread: +postExist.data.thread,
-      });
+    if (updatedPost) {
+      updatedPost.id = +updatedPost.id;
+      updatedPost.thread = +updatedPost.thread;
+      return resp.status(200).json(updatedPost);
     }
-    return resp.status(500).end();
+    return resp.status(200).json({
+      author: postExist.author,
+      created: postExist.created,
+      forum: postExist.forum,
+      id: +postExist.id,
+      message: postExist.message,
+      thread: +postExist.thread,
+    });
+    // return resp.status(500).end();
   }
 
   static async getPostDetails(req, resp) {
@@ -56,24 +54,22 @@ class PostController {
 
     const postExist = await Posts.getPostById(id);
 
-    if (!postExist.success) {
-      return resp.status(500).end();
-    }
 
-    if (!postExist.data) {
+    if (!postExist) {
       return resp.status(404).json({
         message: `Can't find post with id '${id}'\n`,
       });
     }
     const returnObj= {
       post: {
-        author: postExist.data.author,
-        created: postExist.data.created,
-        forum: postExist.data.forum,
-        id: +postExist.data.id,
-        isEdited: postExist.data.isedited,
-        message: postExist.data.message,
-        thread: +postExist.data.thread,
+        author: postExist.author,
+        created: postExist.created,
+        forum: postExist.forum,
+        id: +postExist.id,
+        isEdited: postExist.isedited,
+        message: postExist.message,
+        thread: +postExist.thread,
+        parent: +postExist.parent,
       },
     };
 
@@ -82,51 +78,48 @@ class PostController {
       for (const obj of related) {
         switch (obj) {
           case 'user':
-            const author = await Users.getUserInfo(returnObj.post.author);
+            const author = await Users.getUserByNickname(returnObj.post.author);
 
-            if (!author.success) {
-              return resp.status(500).end();
-            }
 
             returnObj.author = {
-              about: author.data.about,
-              email: author.data.email,
-              fullname: author.data.fullname,
-              nickname: author.data.nickname,
+              about: author.about,
+              email: author.email,
+              fullname: author.fullname,
+              nickname: author.nickname,
             };
             break;
           case 'forum':
             const forum = await Forums.getForumDetails(returnObj.post.forum);
 
-            if (!forum.success) {
+            if (!forum) {
               return resp.status(500).end();
             }
 
             returnObj.forum = {
-              posts: forum.data.posts,
-              slug: forum.data.slug,
-              threads: forum.data.threads,
-              title: forum.data.title,
-              user: forum.data.author,
+              posts: forum.posts,
+              slug: forum.slug,
+              threads: forum.threads,
+              title: forum.title,
+              user: forum.author,
             };
             break;
           case 'thread':
             const thread =
-              await Threads.getThreadById(postExist.data.thread);
+              await Threads.getThreadById(postExist.thread);
 
-            if (!thread.success) {
+            if (!thread) {
               return resp.status(500).end();
             }
 
             returnObj.thread = {
-              author: thread.data.author,
-              created: thread.data.created,
-              forum: thread.data.forum,
-              id: +thread.data.id,
-              slug: thread.data.slug,
-              message: thread.data.message,
-              title: thread.data.title,
-              votes: +thread.data.votes,
+              author: thread.author,
+              created: thread.created,
+              forum: thread.forum,
+              id: +thread.id,
+              slug: thread.slug,
+              message: thread.message,
+              title: thread.title,
+              votes: +thread.votes,
             };
             break;
         }

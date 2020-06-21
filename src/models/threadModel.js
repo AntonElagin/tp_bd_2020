@@ -1,51 +1,35 @@
-const db = require('../modules/db-config');
+const db = require('../modules/db-config').db;
 
 module.exports = new class ThreadModel {
   constructor() {
-    this._db = db;
+    this.db = db;
   }
 
-  async createThread(threadData = {}, forumData = {}, userData= {}) {
-    {
-      try {
-        const data = await this._db.db.one(`INSERT INTO threads (
+  async createThread(
+      threadData = {}, forumData = {},
+      userData= {}, db = this.db,
+  ) {
+    return await db.one(`INSERT INTO threads (
           slug, author, forum, 
           created, title, message) 
           VALUES ($1, $2, $3, $4, $5, $6) 
-          RETURNING author_nickname as author, created, forum,
+          RETURNING author, created, forum,
           id, message, title, slug;`,
-        [
-          threadData.slug,
-          userData.nickname,
-          forumData.slug,
-          threadData.created,
-          threadData.title,
-          threadData.message,
-        ]);
-        return {
-          success: true,
-          data,
-        };
-      } catch (err) {
-        console.error(`
-      [Threads] Create thread error:
-      ${err.message}
-      `);
-        return {
-          success: false,
-          err,
-        };
-      }
-    }
+    [
+      threadData.slug,
+      userData.nickname,
+      forumData.slug,
+      threadData.created,
+      threadData.title,
+      threadData.message,
+    ]);
   }
 
 
-  async createThreadAndOther(threadData = {}, forumData = {}, userData= {}) {
-    {
-      try {
-        return await this._db.db.tx(
-            async (t) => {
-              const thread = await t.one(`
+  createThreadAndOther(threadData = {}, forumData = {}, userData= {}) {
+    return this.db.tx(
+        async (t) => {
+          const thread = await t.one(`
             INSERT INTO threads (
               slug, author, forum, 
               created, title, message) 
@@ -53,157 +37,61 @@ module.exports = new class ThreadModel {
               RETURNING author, created, forum, id,
               message, title, slug;
             `, [
-                threadData.slug,
-                userData.nickname,
-                forumData.slug,
-                threadData.created,
-                threadData.title,
-                threadData.message,
-              ]);
+            threadData.slug,
+            userData.nickname,
+            forumData.slug,
+            threadData.created,
+            threadData.title,
+            threadData.message,
+          ]);
 
-              await t.none(`
+          await t.none(`
                 UPDATE forums SET 
                   threads = threads + 1
                   WHERE slug = $1;
             `, [forumData.slug]);
 
-              await t.none(`
+          await t.none(`
                 INSERT INTO forum_users (forum_slug, user_nickname)
                   VALUES ($1, $2)
                   ON CONFLICT DO NOTHING;
             `, [
-                thread.forum,
-                userData.nickname,
-              ]);
+            thread.forum,
+            userData.nickname,
+          ]);
 
-              return {
-                success: true,
-                data: thread,
-              };
-            },
-        );
-
-
-        // await this._db.db.multi(`
-        // INSERT INTO threads (
-        //   slug, author, forum,
-        //   created, title, message)
-        //   VALUES ($1, $2, $3, $4, $5, $6)
-        //   RETURNING author, created, forum,
-        //   id, message, title, slug;
-
-        // UPDATE forums SET
-        //   threads = threads + 1
-        //   WHERE id = $8;
-
-        // INSERT INTO forum_users (forum_slug, user_nickname)
-        //   VALUES ($3, $2)
-        //   ON CONFLICT DO NOTHING;
-        //   `,
-        // [
-        //   threadData.slug,
-        //   userData.nickname,
-        //   forumData.slug,
-        //   threadData.created,
-        //   threadData.title,
-        //   threadData.message,
-        //   userData.id,
-        //   forumData.id,
-        // ]);
-        // return {
-        //   success: true,
-        //   data: data[0][0],
-        // };
-      } catch (err) {
-        console.error(`
-      [Threads] Create thread and other error:
-      ${err.message}
-      `);
-        return {
-          success: false,
-          err,
-        };
-      }
-    }
+          return thread;
+        },
+    );
   }
 
-  async getThreadBySlugOrId(slug = '', id = -1) {
-    try {
-      const data = await this._db.db.oneOrNone(`
-    Select * from threads
-    where slug = $1 or id = $2;
-    `,
-      [
-        slug,
-        id,
-      ]);
-      return {
-        success: true,
-        data,
-      };
-    } catch (err) {
-      console.error(`
-      [Threads] Get thread by slug or id error:
-      ${err.message}
-      `);
-      return {
-        success: false,
-        err,
-      };
+  async getThreadBySlugOrId(slug = '', id = -1, db = this.db) {
+    if (slug) {
+      return await this.getThreadBySlug(slug, db);
+    } else {
+      return await this.getThreadById(id, db);
     }
   }
 
 
-  async getThreadBySlug(slug = '') {
-    try {
-      const data = await this._db.db.oneOrNone(`
+  async getThreadBySlug(slug = '', db = this.db) {
+    return await db.oneOrNone(`
     Select * from threads
     where slug = $1;
     `,
-      [
-        slug,
-      ]);
-      return {
-        success: true,
-        data,
-      };
-    } catch (err) {
-      console.error(`
-      [Threads] Get thread by slug error:
-      ${err.message}
-      `);
-
-      return {
-        success: false,
-        err,
-      };
-    }
+    [
+      slug,
+    ]);
   }
 
-  async getThreadById(id = -1) {
-    try {
-      const data = await this._db.db.oneOrNone(`
+  async getThreadById(id = -1, db = this.db) {
+    return await this.db.oneOrNone(`
     Select * from threads
     where id = $1;
     `,
-      [
-        id,
-      ]);
-      return {
-        success: true,
-        data,
-      };
-    } catch (err) {
-      console.error(`
-      [Threads] Get thread by id error:
-      ${err.message}
-      `);
-
-      return {
-        success: false,
-        err,
-      };
-    }
+    [
+      id,
+    ]);
   }
 
 
@@ -212,155 +100,90 @@ module.exports = new class ThreadModel {
         limit = 1000,
         since = null,
         desc = false,
+        db = this.db,
       }) {
-    try {
-      let data;
-      if (since) {
-        if (desc) {
-          data = await this._db.db.manyOrNone(`
-          Select created, id, message, slug, title ,
-          author, forum, votes
-          from threads
-          where forum = $1 and created <= $2
-          order by created DESC
-          limit $3
-        `,
-          [
-            forum.slug,
-            since,
-            limit,
-          ]);
-        } else {
-          data = await this._db.db.manyOrNone(`
-          Select created, id, message, slug, title ,
-          author, forum
-          from threads
-          where forum = $1 and created >= $2
-          order by created ASC
-          limit $3
-        `,
-          [
-            forum.slug,
-            since,
-            limit,
-          ]);
-        }
-      } else {
-        data = await this._db.db.manyOrNone(`
-          Select created, id, message,
-           slug, title ,
-           author, forum
-          from threads
-          where forum = $1
-          order by created $2:raw
-          limit $3
+    if (since) {
+      if (desc) {
+        return await db.manyOrNone(`
+          SELECT created, id, message,
+            slug, title , author,
+            forum, votes
+          FROM threads
+          WHERE forum = $1 AND created <= $2
+          ORDER BY created DESC
+          LIMIT $3
         `,
         [
           forum.slug,
-          (desc)? 'DESC': 'ASC',
+          since,
+          limit,
+        ]);
+      } else {
+        return await db.manyOrNone(`
+          SELECT created, id, message,
+           slug, title, author,
+           forum, votes
+          FROM threads
+          WHERE forum = $1 AND created >= $2
+          ORDER BY created ASC
+          LIMIT $3
+        `,
+        [
+          forum.slug,
+          since,
           limit,
         ]);
       }
-      return {
-        success: true,
-        data,
-      };
-    } catch (err) {
-      console.error(`
-      [Threads] Get threads of forum error:
-      ${err.message}
-      `);
-
-      return {
-        success: false,
-        err,
-      };
+    } else {
+      return await db.manyOrNone(`
+          SELECT created, id, message,
+           slug, title, author,
+           forum, votes
+          FROM threads
+          WHERE forum = $1
+          ORDER BY created $2:raw
+          LIMIT $3
+        `,
+      [
+        forum.slug,
+          (desc)? 'DESC': 'ASC',
+          limit,
+      ]);
     }
   }
 
-  async updateThread(id, thread) {
-    try {
-      const condition = this._db.pgp.as.format(
-          ' WHERE id = $1 Returning *',
-          [
-            id,
-          ],
-      );
-      console.log(thread);
-      const updateUserQuery = this._db.pgp.helpers
-          .update(thread, null, 'threads') + condition;
-      const data = await this._db.db.one(updateUserQuery);
-      return {
-        success: true,
-        data,
-      };
-    } catch (err) {
-      console.error(`
-      [Threads] update thread error:
-      ${err.message}
-      `);
-
-      return {
-        success: false,
-        err,
-      };
-    }
+  async updateThread(id, thread, db = this.db) {
+    return await db.one(`Update threads
+       set message = $1:raw , title = $2:raw
+       where id = $3
+       returning *;
+      `, [
+        (thread.message)? `'${thread.message}'` : 'message',
+        (thread.title)? `'${thread.title}'` : 'title',
+        id,
+    ]);
   }
 
-  async updatePostsCount(id = -1, count = 1) {
-    try {
-      const data = await this._db.db.one(`UPDATE threads SET 
+  async updatePostsCount(id = -1, count = 1, db = this.db) {
+    return await db.one(`UPDATE threads SET 
       posts = posts + $1
       WHERE id = $2
       RETURNING *`, [count, id]);
-      return {
-        success: true,
-        data,
-      };
-    } catch (err) {
-      console.error(`
-      [Threads] Update post count of thread error:
-      ${err.message}
-      `);
-
-      return {
-        success: false,
-        err,
-      };
-    }
   }
 
 
-  async getUserAndThread(nickname ='', slug = '', id = -1) {
-    try {
-      const data = await this._db.db.multi(`
+  async getUserAndThread(nickname ='', slug = '', id = -1, db = this.db) {
+    return await db.multi(`
       Select * from users
         where nickname = $3;
 
       Select * from threads
         where slug = $1 or id = $2;
     `,
-      [
-        slug,
-        id,
-        nickname,
-      ]);
-      return {
-        success: true,
-        data: {
-          user: data[0][0],
-          thread: data[1][0],
-        },
-      };
-    } catch (err) {
-      console.error(`
-      [Threads] Get thread by slug or id error:
-      ${err.message}
-      `);
-      return {
-        success: false,
-        err,
-      };
-    }
+    [
+      slug,
+      id,
+      nickname,
+    ]);
   }
 };

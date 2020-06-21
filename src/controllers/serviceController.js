@@ -2,11 +2,7 @@ const Service = require('../models/serviceModel');
 
 module.exports = class ServiceController {
   static async deleteAll(req, resp) {
-    const deleted = await Service.deleteAll();
-
-    if (!deleted.success) {
-      return resp.status(500).end();
-    }
+    await Service.deleteAll();
 
     return resp.status(200).end();
   }
@@ -14,10 +10,10 @@ module.exports = class ServiceController {
   static async getInfo(req, resp) {
     const info = await Service.getInfo();
 
-    if (!info.success) {
+    if (!info) {
       return resp.status(500).end();
     }
 
-    return resp.status(200).json(info.data);
+    return resp.status(200).json(info);
   }
 };

@@ -40,6 +40,7 @@ class ThreadController {
   static async getThreadInfo(req, resp) {
     let id;
     let slug;
+
     if (/^\d+$/.test(req.params.key)) {
       id = req.params.key;
       slug = null;
@@ -50,19 +51,14 @@ class ThreadController {
 
     const thread = await Threads.getThreadBySlugOrId(slug, id);
 
-    if (thread.success) {
-      if (!thread.data) {
-        return resp.status(404).json({
-          message: `Can't find thread with slug or id '${slug || id}'\n`,
-        });
-      }
-      const data = thread.data;
-      return resp.status(200).json(
-          threadTemplate(data),
-      );
-    }
 
-    return resp.status(500).end();
+    if (!thread) {
+      return resp.status(404).json({
+        message: `Can't find thread with slug or id '${slug || id}'\n`,
+      });
+    }
+    const data = threadTemplate(thread);
+    return resp.status(200).send(data);
   }
 
   static async createPost(req, resp) {
@@ -80,13 +76,10 @@ class ThreadController {
     const created = new Date();
     const threadExist = await Threads.getThreadBySlugOrId(slug, id);
 
-    if (threadExist.success && !threadExist.data) {
+    if (!threadExist) {
       return resp.status(404).json({
         message: `Can't find thread with slugx or id  '${slug || id}'\n`,
       });
-    }
-    if (!threadExist.success) {
-      return resp.status(500).end();
     }
 
     if (posts.length === 0) {
@@ -97,22 +90,22 @@ class ThreadController {
     for (const post of posts) {
       if (post.parent) {
         parentIdList.push({
-          thread_id: threadExist.data.id,
+          thread_id: threadExist.id,
           id: post.parent,
         });
         const postParent = await Posts.getPostByIdAndThread(
             post.parent,
-            threadExist.data,
+            threadExist,
         );
 
-        if (postParent.success && !postParent.data) {
+        if (!postParent) {
           return resp.status(409).json({
             message: `Can't find parent post with id '${post.parent}'`,
           });
         }
 
 
-        if (!postParent.success) {
+        if (!postParent) {
           return resp.status(500).end();
         }
       }
@@ -121,9 +114,9 @@ class ThreadController {
     // const authorSet = new Set();
     // const addUsersList = [];
     for (const post of posts) {
-      const author = await Users.getUserInfo(post.author);
+      const author = await Users.getUserByNickname(post.author);
 
-      if (!author.data) {
+      if (!author) {
         return resp.status(404).json({
           message: `Can't find author with nickname '${post.author}'`,
         });
@@ -138,43 +131,35 @@ class ThreadController {
       // //   authorSet.add(author.data.nickname);
       // }
       post.created = created;
-      post.author= author.data.nickname;
-      post.forum = threadExist.data.forum;
-      post.thread = threadExist.data.id;
+      post.author= author.nickname;
+      post.forum = threadExist.forum;
+      post.thread = threadExist.id;
       post.parent = post.parent || null;
     }
 
     const postsInsert = await Posts.createPosts(posts);
 
-    if (!postsInsert.success) {
+    if (!postsInsert) {
       return resp.status(500).end();
     }
 
-    // const addedToForum = await Forums.addUsersToForum(addUsersList);
-
-    // if (!addedToForum.success) {
-    //   return resp.status(500).end();
-    // }
-
 
     const updatedForum = await Forums.updatePostsCount(
-        threadExist.data.forum,
+        threadExist.forum,
         posts.length,
     );
 
 
-    if (!(updatedForum.success)) {
+    if (!(updatedForum)) {
       return resp.status(500).end();
     }
 
-    return resp.status(201).json(postsTemplate(postsInsert.data));
+    return resp.status(201).json(postsTemplate(postsInsert));
   }
 
   static async updateThread(req, resp) {
     const thread = req.body;
-    if (thread.votes) {
-      throw new Error('suka bliad!');
-    }
+
     let id;
     let slug;
     if (/^\d+$/.test(req.params.key)) {
@@ -188,26 +173,23 @@ class ThreadController {
 
     const threadExist = await Threads.getThreadBySlugOrId(slug, id);
 
-    if (threadExist.success) {
-      if (!threadExist.data) {
-        return resp.status(404).json({
-          message: `Can't find thread with slug or id '${slug || id}'`,
-        });
-      }
-    } else {
-      return resp.status(500).end();
+    if (!threadExist) {
+      return resp.status(404).json({
+        message: `Can't find thread with slug or id '${slug || id}'`,
+      });
     }
 
+
     if (Object.keys(thread).length === 0) {
-      return resp.status(200).json(threadTemplate(threadExist.data));
+      return resp.status(200).json(threadTemplate(threadExist));
     }
 
     const updatedThread = await Threads.updateThread(
-        threadExist.data.id,
+        threadExist.id,
         thread);
 
-    if (updatedThread.success) {
-      return resp.status(200).json(threadTemplate(updatedThread.data));
+    if (updatedThread) {
+      return resp.status(200).json(threadTemplate(updatedThread));
     }
 
     return resp.status(500).end();
@@ -216,6 +198,10 @@ class ThreadController {
 
   static async vote(req, resp) {
     const vote = req.body;
+    if (!((vote.voice === -1) || (vote.voice === 1))) {
+      return resp.status(400).end();
+    }
+
     let id;
     let slug;
     if (/^\d+$/.test(req.params.key)) {
@@ -259,28 +245,25 @@ class ThreadController {
 
     const threadExist = await Threads.getThreadBySlugOrId(slug, id);
 
-    if (threadExist.success) {
-      if (!threadExist.data) {
-        return resp.status(404).json({
-          message: `Can't find thread with id or slug '${slug || id}'`,
-        });
-      }
-    } else {
-      return resp.status(500).end();
+    if (!threadExist) {
+      return resp.status(404).json({
+        message: `Can't find thread with id or slug '${slug || id}'`,
+      });
     }
+
 
     let posts;
     switch (getParams.sort) {
       case 'parent_tree':
         posts = await Posts.getPostsbytThreadWithTreeWithParentSort(
-            threadExist.data.id,
+            threadExist.id,
             getParams,
         );
 
         break;
       case 'tree':
         posts = await Posts.getPostsbytThreadWithTreeSort(
-            threadExist.data.id,
+            threadExist.id,
             getParams,
         );
 
@@ -288,21 +271,21 @@ class ThreadController {
       case 'flat':
       default:
         posts = await Posts.getPostsbytThreadWithFlatSort(
-            threadExist.data.id,
+            threadExist.id,
             getParams,
         );
     }
 
-    if (!posts.success) {
+    if (!posts) {
       return resp.status(500).end();
     }
 
-    if (posts.data && posts.data.length === 0 ) {
+    if (posts && posts.length === 0 ) {
       return resp.status(200).json([]);
     }
 
     const returnArray = [];
-    for (const post of posts.data) {
+    for (const post of posts) {
       returnArray.push({
         author: post.author,
         created: post.created,

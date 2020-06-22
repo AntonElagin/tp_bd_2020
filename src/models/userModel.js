@@ -127,6 +127,15 @@ module.exports = new class UserModel {
     ]);
   }
 
+  async getUserByNicknameOnlyNickname(nickname = '', db = this.db) {
+    return await db.oneOrNone(`
+      Select nickname from users
+      where nickname = $1
+    `, [
+      nickname,
+    ]);
+  }
+
   async updateUserProfile(nickname = '', userData = {}, db = this.db) {
     const condition = pgp.as.format(
         ' WHERE nickname = $1 Returning *',
@@ -162,10 +171,10 @@ module.exports = new class UserModel {
       if (desc) {
         data =await db.manyOrNone(`
         SELECT about, email, fullname, nickname
-        from users as u
-        join forum_users as f ON u.nickname = f.user_nickname
-        where f.forum_slug = $1 AND nickname < $2
-        order by nickname DESC
+        from forum_users 
+        join users  ON nickname = user_nickname
+        where forum_slug = $1 AND user_nickname < $2
+        order by user_nickname DESC
         limit $3
       `, [
           forum.slug,
@@ -175,10 +184,10 @@ module.exports = new class UserModel {
       } else {
         data = await db.manyOrNone(`
         SELECT about, email, fullname, nickname
-        from users as u
-        join forum_users as f ON u.nickname = f.user_nickname
-        where f.forum_slug = $1 and nickname > $2
-        order by nickname ASC
+        from forum_users 
+        join users ON nickname = user_nickname
+        where forum_slug = $1 and user_nickname > $2
+        order by user_nickname ASC
         limit $3
       `, [
           forum.slug,
@@ -189,10 +198,10 @@ module.exports = new class UserModel {
     } else {
       data = await db.manyOrNone(`
           SELECT about, email, fullname, nickname
-          from users as u
-          join forum_users as f ON u.nickname = f.user_nickname
-          where f.forum_slug = $1
-          order by nickname $2:raw
+          from forum_users
+          join users ON nickname = user_nickname
+          where forum_slug = $1
+          order by user_nickname $2:raw
           limit $3
         `, [
         forum.slug,

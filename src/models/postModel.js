@@ -209,7 +209,8 @@ module.exports = new class PostModel {
     return await db.manyOrNone(`
         SELECT * FROM posts
         WHERE thread = $1 $2:raw
-        ORDER BY path $3:raw LIMIT $4`, [
+        ORDER BY path $3:raw 
+        LIMIT $4`, [
       threadId,
         (since ) ? whereCondition.toString() : '',
         (desc ? ' DESC' : 'ASC'),

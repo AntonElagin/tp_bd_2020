@@ -64,7 +64,7 @@ IF NOT EXISTS threads
     FOREIGN KEY (forum) REFERENCES forums (slug)
 );
 
-CREATE INDEX if NOT EXISTS index_threads_id
+CREATE INDEX if NOT EXISTS index_threads_forum_created
     ON threads (forum, created);
 
 -- Threads table and indexes
@@ -89,10 +89,32 @@ IF NOT EXISTS posts
     FOREIGN KEY (thread) REFERENCES threads (id)
 );
 
+
+CREATE INDEX IF NOT EXISTS index_posts_thread_id_path1_id ON posts (thread, (path[1]), id);
+
+
+CREATE INDEX IF NOT EXISTS index_posts_thread_id_parent_path ON posts (thread, parent, path);
+
+CREATE INDEX IF NOT EXISTS index_posts_parent_id ON posts (parent, id);
+
+CREATE INDEX IF NOT EXISTS index_posts_id_created_thread_id ON posts (id, created, thread);
+
+CREATE INDEX IF NOT EXISTS index_posts_id
+    ON posts (id);
+CREATE INDEX IF NOT EXISTS index_posts_path_thread 
+    ON posts (path, thread);
+CREATE INDEX IF NOT EXISTS index_posts_thread_path 
+    ON posts (thread, path);
+CREATE INDEX IF NOT EXISTS index_posts_id_path
+    ON posts (id, path);
 CREATE INDEX if NOT EXISTS index_posts_thread_id
     ON posts (thread, id);
-CREATE INDEX if NOT EXISTS index_posts_path1_id
-    ON posts (path[1], thread, id);
+CREATE INDEX if NOT EXISTS index_posts_thread_created_id
+    ON posts (thread, created, id);
+-- CREATE INDEX if NOT EXISTS index_posts_thread_path
+--     ON posts (thread, path);
+-- CREATE INDEX if NOT EXISTS index_posts_path1_id
+--     ON posts (path[1], thread, id);
 
 
 -- Votes table and indexes

@@ -72,12 +72,12 @@ class ThreadController {
 
     const result = await Threads.createPostsTx(slug, id, posts);
 
-    switch (result.status) {
-      case 201:
-        return resp.status(result.status).json(postsTemplate(result.data));
-      default:
-        return resp.status(result.status).json(result.data);
+
+    if (result.status) {
+      return resp.status(result.status).json(result.data);
     }
+
+    return resp.status(201).json(postsTemplate(result));
   }
 
   static async updateThread(req, resp) {

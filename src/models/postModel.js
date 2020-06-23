@@ -25,46 +25,53 @@ module.exports = new class PostModel {
       post.parent = +post.parent;
       post.isEdited = post.isedited;
       delete(post.isedited);
-      const res = {
+      // const res = {
+      //   post,
+      // };
+      const pos = ['post'];
+      const batch = [
         post,
-      };
-
+      ];
       for (const value of related) {
         switch (value) {
           case 'user':
-            const author = await Users.getUserByNickname(
+            const author = Users.getUserByNickname(
                 post.author,
                 t,
             );
 
 
-            res.author = author;
+            // res.author = author;
+            pos.push('author');
+            batch.push(author);
             break;
           case 'forum':
-            const forum = await this.getForumDetails(post.forum, t);
+            const forum = this.getForumDetails(post.forum, t);
 
             forum.posts = +forum.posts;
             forum.user = forum.author;
             delete(forum.author);
             forum.threads = +forum.threads;
-            res.forum = forum;
+
+            pos.push('forum');
+            batch.push(forum);
             break;
           case 'thread':
-            const thread =
-              await this.getThreadById(post.thread, t);
+            const thread = this.getThreadById(post.thread, t);
 
             thread.id = +thread.id;
             thread.votes = +thread.votes;
 
-            res.thread = thread;
+            // res.thread = thread;
+            // thread.type ='thread';
+            pos.push('thread');
+            batch.push(thread);
             break;
         }
       }
 
-      return {
-        status: 200,
-        data: res,
-      };
+      batch.push(pos);
+      return t.batch(batch);
     });
   }
 

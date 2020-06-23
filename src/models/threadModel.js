@@ -101,19 +101,16 @@ module.exports = new class ThreadModel {
         post.forum = thread.forum;
         post.thread = thread.id;
         arr.push(
-            await Posts.createPost(post, t),
+            Posts.createPost(post, t),
         );
       }
 
       await this.updatePostsCount(thread.forum, arr.length, t);
 
-      return {
-        status: 201,
-        data: arr,
-      };
+      return t.batch(arr);
     }).catch((err) => {
       console.log(err);
-      if (err.message === 'parent error') {
+      if (err.first.message === 'parent error') {
         return {
           status: 409,
           data: {
@@ -121,7 +118,7 @@ module.exports = new class ThreadModel {
           },
         };
       }
-      if (err.constraint === 'posts_parent_fkey') {
+      if (err.first.constraint === 'posts_parent_fkey') {
         return {
           status: 404,
           data: {
@@ -129,7 +126,7 @@ module.exports = new class ThreadModel {
           },
         };
       }
-      if (err.constraint === 'posts_author_fkey') {
+      if (err.first.constraint === 'posts_author_fkey') {
         return {
           status: 404,
           data: {

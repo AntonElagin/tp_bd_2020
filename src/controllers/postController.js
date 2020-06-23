@@ -50,7 +50,31 @@ class PostController {
 
     const result = await Posts.getPostDetailsTx(id, related);
 
-    return resp.status(result.status).json(result.data);
+    if (result.status) {
+      return resp.status(result.status).json(result.data);
+    }
+
+
+    const returnO = {};
+
+    const arr = result[result.length - 1];
+    for (let i = 0; i < arr.length; i++) {
+      switch (arr[i]) {
+        case 'thread':
+          result[i].id = +result[i].id;
+          result[i].votes = +result[i].votes;
+          break;
+        case 'forum':
+          result[i].posts = +result[i].posts;
+          result[i].user = result[i].author;
+          delete(result[i].author);
+          result[i].threads = +result[i].threads;
+          break;
+      }
+      returnO[arr[i]] = result[i];
+    }
+
+    return resp.status(200).json(returnO);
   }
 }
 

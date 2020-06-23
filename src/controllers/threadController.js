@@ -78,11 +78,14 @@ class ThreadController {
       return resp.status(result.status).json(result.data);
     }
 
-    global.postsCount += result.length;
-    if (global.postsCount > 1500000) {
-      global.postsCount = 0;
-      Services.vacuum();
-    }
+    // global.postsCount += result.length;
+    // for (const id of global.postsCount) {
+    //   global.postsCount.push(id.id);
+    // }
+    // if (global.postsCount.length > 1500000) {
+    //   global.postsCount = [];
+    //   Services.vacuum();
+    // }
 
     return resp.status(201).json(postsTemplate(result));
   }

@@ -1,6 +1,6 @@
 const express = require('express');
 const logger = require('morgan');
-global.postsCount = 0;
+// global.postsCount = [];
 process.env.NODE_ENV = 'production';
 
 const userRouter = require('./routes/userRouter');

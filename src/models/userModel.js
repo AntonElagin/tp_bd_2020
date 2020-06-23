@@ -91,8 +91,8 @@ module.exports = new class UserModel {
     });
   }
 
-  async createUser(nickname, about, email, fullname, db = this.db) {
-    return await db.one(`
+  createUser(nickname, about, email, fullname, db = this.db) {
+    return db.one(`
     INSERT INTO users
     (nickname, email, about, fullname)
     VALUES ($1, $2, $3, $4)
@@ -105,8 +105,8 @@ module.exports = new class UserModel {
     ]);
   }
 
-  async getUserByNickname(nickname = '', db = this.db) {
-    return await db.oneOrNone(`
+  getUserByNickname(nickname = '', db = this.db) {
+    return db.oneOrNone(`
       Select * from users
       where nickname = $1
     `, [
@@ -114,7 +114,7 @@ module.exports = new class UserModel {
     ]);
   }
 
-  async updateUserProfile(nickname = '', userData = {}, db = this.db) {
+  updateUserProfile(nickname = '', userData = {}, db = this.db) {
     const condition = pgp.as.format(
         ' WHERE nickname = $1 Returning *',
         [
@@ -123,7 +123,7 @@ module.exports = new class UserModel {
     );
     const updateUserQuery = pgp.helpers
         .update(userData, null, 'users') + condition;
-    return await db.one(updateUserQuery);
+    return db.one(updateUserQuery);
   }
 
   getUserByNicknameOrEmail(nickname = '', email = '', db = this.db) {
@@ -137,7 +137,7 @@ module.exports = new class UserModel {
     ]);
   }
 
-  async getUsersByForum(forum = {},
+  getUsersByForum(forum = {},
       {
         limit = 1000,
         since = '',
@@ -147,7 +147,7 @@ module.exports = new class UserModel {
     let data;
     if (since) {
       if (desc) {
-        data =await db.manyOrNone(`
+        data = db.manyOrNone(`
         SELECT about, email, fullname, user_nickname as nickname
         from forum_users 
         where forum_slug = $1 AND user_nickname < $2
@@ -159,7 +159,7 @@ module.exports = new class UserModel {
           +limit,
         ]);
       } else {
-        data = await db.manyOrNone(`
+        data = db.manyOrNone(`
         SELECT about, email, fullname, user_nickname as nickname
         from forum_users
         where forum_slug = $1 and user_nickname > $2
@@ -172,7 +172,7 @@ module.exports = new class UserModel {
         ]);
       }
     } else {
-      data = await db.manyOrNone(`
+      data = db.manyOrNone(`
           SELECT about, email, fullname, user_nickname as nickname
           from forum_users
           where forum_slug = $1

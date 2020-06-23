@@ -154,8 +154,8 @@ module.exports = new class ForumModel {
     });
   }
 
-  async createForum(forumData = {}, userData = {}, db = this.db) {
-    return await db.one(`INSERT INTO
+  createForum(forumData = {}, userData = {}, db = this.db) {
+    return db.one(`INSERT INTO
       forums (slug, title, author)
        VALUES ($1, $2, $3)
        RETURNING *`, [
@@ -165,8 +165,8 @@ module.exports = new class ForumModel {
     ]);
   }
 
-  async getForumDetails(forumSlug = '', db = this.db) {
-    return await db.oneOrNone(`Select * 
+  getForumDetails(forumSlug = '', db = this.db) {
+    return db.oneOrNone(`Select * 
       from forums
       where slug = $1`, [
       forumSlug,

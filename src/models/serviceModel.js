@@ -5,8 +5,8 @@ module.exports = new class ServiceModel {
     this.db = db;
   }
 
-  async deleteAll() {
-    return await this.db.none(`
+  deleteAll() {
+    return this.db.none(`
       TRUNCATE votes, users, posts, threads, forums RESTART IDENTITY CASCADE
       `);
   }

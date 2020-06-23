@@ -67,8 +67,8 @@ module.exports = new class ThreadModel {
   }
 
 
-  async updatePostsCount(slug = -1, count = 1, db = this.db) {
-    return await db.one(`UPDATE forums SET 
+  updatePostsCount(slug = -1, count = 1, db = this.db) {
+    return db.one(`UPDATE forums SET 
       posts = posts + $1
       WHERE slug = $2
       RETURNING *`, [count, slug]);
@@ -141,11 +141,11 @@ module.exports = new class ThreadModel {
     });
   }
 
-  async createThread(
+  createThread(
       threadData = {}, forumData = {},
       userData= {}, db = this.db,
   ) {
-    return await db.one(`INSERT INTO threads (
+    return db.one(`INSERT INTO threads (
           slug, author, forum, 
           created, title, message) 
           VALUES ($1, $2, $3, $4, $5, $6) 
@@ -162,17 +162,17 @@ module.exports = new class ThreadModel {
   }
 
 
-  async getThreadBySlugOrId(slug = '', id = -1, db = this.db) {
+  getThreadBySlugOrId(slug = '', id = -1, db = this.db) {
     if (slug) {
-      return await this.getThreadBySlug(slug, db);
+      return this.getThreadBySlug(slug, db);
     } else {
-      return await this.getThreadById(id, db);
+      return this.getThreadById(id, db);
     }
   }
 
 
-  async getThreadBySlug(slug = '', db = this.db) {
-    return await db.oneOrNone(`
+  getThreadBySlug(slug = '', db = this.db) {
+    return db.oneOrNone(`
     Select * from threads
     where slug = $1;
     `,
@@ -181,8 +181,8 @@ module.exports = new class ThreadModel {
     ]);
   }
 
-  async getThreadById(id = -1, db = this.db) {
-    return await this.db.oneOrNone(`
+  getThreadById(id = -1, db = this.db) {
+    return this.db.oneOrNone(`
     Select * from threads
     where id = $1;
     `,
@@ -192,7 +192,7 @@ module.exports = new class ThreadModel {
   }
 
 
-  async getForumThreads(
+  getForumThreads(
       forum = {}, {
         limit = 1000,
         since = null,
@@ -201,7 +201,7 @@ module.exports = new class ThreadModel {
       }) {
     if (since) {
       if (desc) {
-        return await db.manyOrNone(`
+        return db.manyOrNone(`
           SELECT created, id, message,
             slug, title , author,
             forum, votes
@@ -216,7 +216,7 @@ module.exports = new class ThreadModel {
           limit,
         ]);
       } else {
-        return await db.manyOrNone(`
+        return db.manyOrNone(`
           SELECT created, id, message,
            slug, title, author,
            forum, votes
@@ -232,7 +232,7 @@ module.exports = new class ThreadModel {
         ]);
       }
     } else {
-      return await db.manyOrNone(`
+      return db.manyOrNone(`
           SELECT created, id, message,
            slug, title, author,
            forum, votes
@@ -249,8 +249,8 @@ module.exports = new class ThreadModel {
     }
   }
 
-  async updateThread(id, thread, db = this.db) {
-    return await db.one(`Update threads
+  updateThread(id, thread, db = this.db) {
+    return db.one(`Update threads
        set message = $1:raw , title = $2:raw
        where id = $3
        returning *;

@@ -1,5 +1,5 @@
 const express = require('express');
-const logger = require('morgan');
+// const logger = require('morgan');
 
 process.env.NODE_ENV = 'production';
 

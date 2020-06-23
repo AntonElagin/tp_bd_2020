@@ -7,6 +7,7 @@ const connOptions = {
   database: 'docker',
   user: 'docker',
   password: 'docker',
+  max: 30,
 };
 
 

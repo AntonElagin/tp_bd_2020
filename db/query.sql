@@ -20,8 +20,10 @@ IF NOT EXISTS users
     email       CITEXT      UNIQUE NOT NULL
 );
 
-CREATE INDEX if NOT EXISTS index_users_full 
-    ON users (nickname, email, fullname, about);
+CREATE INDEX if NOT EXISTS index_users_nickname
+    ON users (nickname) INCLUDE(fullname, about, email);
+-- CREATE INDEX if NOT EXISTS index_users_full 
+--     ON users (nickname, email, fullname, about);
 
 -- Forums table and indexes
 
@@ -38,8 +40,8 @@ IF NOT EXISTS forums
     FOREIGN KEY (author) REFERENCES users (nickname)
 );
 
-CREATE INDEX if NOT EXISTS index_forums_slug 
-    ON forums (slug);
+CREATE INDEX if NOT EXISTS index_forums_slug_full
+    ON forums (slug) INCLUDE (title, author, posts, threads);
 
 
 -- Threads table and indexes
@@ -66,6 +68,10 @@ IF NOT EXISTS threads
 
 CREATE INDEX if NOT EXISTS index_threads_forum_created
     ON threads (forum, created);
+CREATE INDEX if NOT EXISTS index_threads_slug_full
+    ON threads (slug) INCLUDE (id, author, forum, created, title, message, votes);
+CREATE INDEX if NOT EXISTS index_threads_slug_full
+    ON threads (id) INCLUDE (slug, author, forum, created, title, message, votes);
 
 -- Threads table and indexes
 
@@ -100,7 +106,8 @@ CREATE INDEX IF NOT EXISTS index_posts_parent_id ON posts (parent, id);
 CREATE INDEX IF NOT EXISTS index_posts_id_created_thread_id ON posts (id, created, thread);
 
 CREATE INDEX IF NOT EXISTS index_posts_id
-    ON posts (id);
+    ON posts (id) ;
+    -- INCLUDE (author, forum, thread, created, isEdited, message, parent, path);
 CREATE INDEX IF NOT EXISTS index_posts_thread_path 
     ON posts (thread, path);
 CREATE INDEX IF NOT EXISTS index_posts_path_path_GIN 

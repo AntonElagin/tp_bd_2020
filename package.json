@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node --nouse-idle-notification --expose-gc src/server.js"
   },
   "author": "Anton Elagin",
   "license": "ISC",

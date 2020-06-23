@@ -70,7 +70,7 @@ CREATE INDEX if NOT EXISTS index_threads_forum_created
     ON threads (forum, created);
 CREATE INDEX if NOT EXISTS index_threads_slug_full
     ON threads (slug) INCLUDE (id, author, forum, created, title, message, votes);
-CREATE INDEX if NOT EXISTS index_threads_slug_full
+CREATE INDEX if NOT EXISTS index_threads_id_full
     ON threads (id) INCLUDE (slug, author, forum, created, title, message, votes);
 
 -- Threads table and indexes
@@ -155,6 +155,9 @@ IF NOT EXISTS forum_users
 (
 	forum_slug      CITEXT     NOT NULL ,
 	user_nickname   CITEXT     NOT NULL ,
+    fullname    VARCHAR NOT NULL,
+    about       TEXT NOT NULL,
+    email       CITEXT   NOT NULL,
 
     FOREIGN KEY (forum_slug) REFERENCES forums (slug),
     FOREIGN KEY (user_nickname) REFERENCES users (nickname),
@@ -162,6 +165,7 @@ IF NOT EXISTS forum_users
     UNIQUE (forum_slug, user_nickname),
     CONSTRAINT forums_users_nicknames_pk PRIMARY KEY (forum_slug, user_nickname)
 );
+
 
 
 
@@ -243,9 +247,18 @@ EXECUTE PROCEDURE update_votes();
 -- DROP FUNCTION IF EXISTS add_new_forum_user() CASCADE;
 CREATE OR REPLACE FUNCTION add_new_forum_user() RETURNS TRIGGER AS
 $add_forum_user$
+DECLARE
+    fullnameV VARCHAR;
+    aboutV TEXT;
+    emailV CITEXT;
 BEGIN
-    INSERT INTO forum_users (forum_slug, user_nickname)
-    VALUES (NEW.forum, NEW.author)
+	SELECT INTO fullnameV, aboutV, emailV 
+	fullname, about, email
+    from users
+	where nickname = NEW.author;
+    
+    INSERT INTO forum_users (forum_slug, user_nickname, fullname, about, email)
+    VALUES (NEW.forum, NEW.author, fullnameV, aboutV, emailV)
     ON CONFLICT DO NOTHING;
 
     RETURN NULL;

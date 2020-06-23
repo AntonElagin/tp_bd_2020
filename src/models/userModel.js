@@ -170,9 +170,8 @@ module.exports = new class UserModel {
     if (since) {
       if (desc) {
         data =await db.manyOrNone(`
-        SELECT about, email, fullname, nickname
+        SELECT about, email, fullname, user_nickname as nickname
         from forum_users 
-        join users  ON nickname = user_nickname 
         where forum_slug = $1 AND user_nickname < $2
         order by user_nickname DESC
         limit $3
@@ -183,9 +182,8 @@ module.exports = new class UserModel {
         ]);
       } else {
         data = await db.manyOrNone(`
-        SELECT about, email, fullname, nickname
-        from forum_users 
-        join users ON nickname = user_nickname 
+        SELECT about, email, fullname, user_nickname as nickname
+        from forum_users
         where forum_slug = $1 and user_nickname > $2
         order by user_nickname ASC
         limit $3
@@ -197,9 +195,8 @@ module.exports = new class UserModel {
       }
     } else {
       data = await db.manyOrNone(`
-          SELECT about, email, fullname, nickname
+          SELECT about, email, fullname, user_nickname as nickname
           from forum_users
-          join users ON nickname = user_nickname
           where forum_slug = $1
           order by user_nickname $2:raw
           limit $3

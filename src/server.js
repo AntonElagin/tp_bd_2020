@@ -15,7 +15,7 @@ const cluster = require('express-cluster');
 cluster(function(worker) {
   const app = express();
 
-  //   app.use(logger('dev'));
+  // app.use(logger('dev'));
   app.use(express.json());
 
   app.use('/api/user', userRouter);

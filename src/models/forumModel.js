@@ -54,12 +54,15 @@ module.exports = new class ForumModel {
             `, [forum.slug]);
 
       await t.none(`
-                INSERT INTO forum_users (forum_slug, user_nickname)
-                  VALUES ($1, $2)
+                INSERT INTO forum_users (forum_slug, user_nickname, fullname, about, email)
+                  VALUES ($1, $2, $3, $4, $5)
                   ON CONFLICT DO NOTHING;
             `, [
         slug,
         user.nickname,
+        user.fullname,
+        user.about,
+        user.email,
       ]);
 
       return {

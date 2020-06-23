@@ -25,19 +25,6 @@ module.exports = new class UserModel {
         };
       }
 
-      // const dataConflict = await this.getUserByNicknameOrEmail(
-      //     userData.nickname,
-      //     userData.email,
-      //     t,
-      // );
-
-      // if (dataConflict.length > 0) {
-      //   return {
-      //     status: 409,
-      //     data: dataConflict,
-      //   };
-      // }
-
       const updatedUser = await this.updateUserProfile(
           nickname,
           userData,
@@ -121,15 +108,6 @@ module.exports = new class UserModel {
   async getUserByNickname(nickname = '', db = this.db) {
     return await db.oneOrNone(`
       Select * from users
-      where nickname = $1
-    `, [
-      nickname,
-    ]);
-  }
-
-  async getUserByNicknameOnlyNickname(nickname = '', db = this.db) {
-    return await db.oneOrNone(`
-      Select nickname from users
       where nickname = $1
     `, [
       nickname,

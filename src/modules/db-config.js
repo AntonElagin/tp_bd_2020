@@ -1,4 +1,7 @@
-const pgp = require('pg-promise')();
+const Promise = require('bluebird');
+const pgp = require('pg-promise')({
+  promiseLib: Promise,
+});
 
 // Database connection details;
 const connOptions = {

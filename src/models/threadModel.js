@@ -162,45 +162,6 @@ module.exports = new class ThreadModel {
   }
 
 
-  createThreadAndOther(threadData = {}, forumData = {}, userData= {}) {
-    return this.db.tx(
-        async (t) => {
-          const thread = await t.one(`
-            INSERT INTO threads (
-              slug, author, forum, 
-              created, title, message) 
-              VALUES ($1, $2, $3, $4, $5, $6) 
-              RETURNING author, created, forum, id,
-              message, title, slug;
-            `, [
-            threadData.slug,
-            userData.nickname,
-            forumData.slug,
-            threadData.created,
-            threadData.title,
-            threadData.message,
-          ]);
-
-          await t.none(`
-                UPDATE forums SET 
-                  threads = threads + 1
-                  WHERE slug = $1;
-            `, [forumData.slug]);
-
-          await t.none(`
-                INSERT INTO forum_users (forum_slug, user_nickname)
-                  VALUES ($1, $2)
-                  ON CONFLICT DO NOTHING;
-            `, [
-            thread.forum,
-            userData.nickname,
-          ]);
-
-          return thread;
-        },
-    );
-  }
-
   async getThreadBySlugOrId(slug = '', id = -1, db = this.db) {
     if (slug) {
       return await this.getThreadBySlug(slug, db);
@@ -297,22 +258,6 @@ module.exports = new class ThreadModel {
         (thread.message)? `'${thread.message}'` : 'message',
         (thread.title)? `'${thread.title}'` : 'title',
         id,
-    ]);
-  }
-
-
-  async getUserAndThread(nickname ='', slug = '', id = -1, db = this.db) {
-    return await db.multi(`
-      Select * from users
-        where nickname = $3;
-
-      Select * from threads
-        where slug = $1 or id = $2;
-    `,
-    [
-      slug,
-      id,
-      nickname,
     ]);
   }
 };

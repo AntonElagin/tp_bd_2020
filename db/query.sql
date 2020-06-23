@@ -98,7 +98,6 @@ IF NOT EXISTS posts
 
 CREATE INDEX IF NOT EXISTS index_posts_thread_id_path1_id ON posts (thread, (path[1]), id);
 
-
 CREATE INDEX IF NOT EXISTS index_posts_thread_id_parent_path ON posts (thread, parent, path);
 
 CREATE INDEX IF NOT EXISTS index_posts_parent_id ON posts (parent, id);
@@ -107,7 +106,6 @@ CREATE INDEX IF NOT EXISTS index_posts_id_created_thread_id ON posts (id, create
 
 CREATE INDEX IF NOT EXISTS index_posts_id
     ON posts (id) ;
-    -- INCLUDE (author, forum, thread, created, isEdited, message, parent, path);
 CREATE INDEX IF NOT EXISTS index_posts_thread_path 
     ON posts (thread, path);
 CREATE INDEX IF NOT EXISTS index_posts_path_path_GIN 
@@ -165,11 +163,6 @@ IF NOT EXISTS forum_users
     UNIQUE (forum_slug, user_nickname),
     CONSTRAINT forums_users_nicknames_pk PRIMARY KEY (forum_slug, user_nickname)
 );
-
-CREATE INDEX if NOT EXISTS index_sorum_users_pk_full
-    ON forum_users (forum_slug, user_nickname) INCLUDE (fullname, about, email);
-
-
 
 
 CREATE OR REPLACE FUNCTION add_path_to_post()

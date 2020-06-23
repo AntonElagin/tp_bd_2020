@@ -13,6 +13,7 @@
     "eslint-config-google": "^0.14.0"
   },
   "dependencies": {
+    "bluebird": "^3.7.2",
     "express": "^4.17.1",
     "express-async-handler": "^1.1.4",
     "express-cluster": "0.0.5",

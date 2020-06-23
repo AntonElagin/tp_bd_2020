@@ -54,7 +54,8 @@ module.exports = new class ForumModel {
             `, [forum.slug]);
 
       await t.none(`
-                INSERT INTO forum_users (forum_slug, user_nickname, fullname, about, email)
+                INSERT INTO forum_users (forum_slug, user_nickname,
+                   fullname, about, email)
                   VALUES ($1, $2, $3, $4, $5)
                   ON CONFLICT DO NOTHING;
             `, [
@@ -74,17 +75,6 @@ module.exports = new class ForumModel {
 
   getUsersOfForumTx(slug, getParams) {
     return this.db.tx(async (t) => {
-      // const forum = await this.getForumDetails(slug, t);
-
-      // if (!forum) {
-      // return {
-      //   status: 404,
-      //   data: {
-      //     message: `Can't find forum with slug '${slug}'\n`,
-      //   },
-      // };
-      // }
-
       getParams.db = t;
 
       const users = await Users.getUsersByForum({slug}, getParams);
@@ -180,46 +170,6 @@ module.exports = new class ForumModel {
       from forums
       where slug = $1`, [
       forumSlug,
-    ]);
-  }
-
-
-  async checkForumAndUser(forumSlug = '', nickname = '') {
-    const data = await this.db.multi(`
-      Select * from users
-      where nickname = $2;
-      Select * 
-      from forums
-      where slug = $1;
-      `, [
-      forumSlug,
-      nickname,
-    ]);
-    return {
-
-      user: data[0][0],
-      forum: data[1][0],
-
-    };
-  }
-
-
-  async updateThreadCount(id = -1, count = 1) {
-    return await this.db.one(`UPDATE forums SET 
-      threads = threads + $1
-      WHERE id = $2
-      RETURNING *`, [count, id]);
-  }
-
-
-  async addUserToForum(user, forum) {
-    return await this.db.oneOrNone(`
-            INSERT INTO forum_users (forum_slug, user_nickname)
-            VALUES ($1, $2)
-            ON CONFLICT DO NOTHING`,
-    [
-      forum.slug,
-      user.nickname,
     ]);
   }
 };

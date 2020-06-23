@@ -25,9 +25,6 @@ module.exports = new class PostModel {
       post.parent = +post.parent;
       post.isEdited = post.isedited;
       delete(post.isedited);
-      // const res = {
-      //   post,
-      // };
       const pos = ['post'];
       const batch = [
         post,
@@ -139,21 +136,6 @@ module.exports = new class PostModel {
         SELECT * from posts
         where id = $1
       `, [id]);
-  }
-
-
-  async getPostByIdAndThread(id, thread) {
-    return await this.db.oneOrNone(`
-        SELECT * from posts
-        where id = $1 and thread = $2
-      `, [id, thread.id]);
-  }
-
-  async getPostByIdListAndThread(idList, thread) {
-    return await this.db.manyOrNone(`
-        SELECT * from posts
-        where id in ($1:csv) and thread = $2
-      `, [idList, thread.id]);
   }
 
   async updatePostMessage(id = -1, message = '') {

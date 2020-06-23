@@ -71,21 +71,33 @@ module.exports = new class ForumModel {
 
   getUsersOfForumTx(slug, getParams) {
     return this.db.tx(async (t) => {
-      const forum = await this.getForumDetails(slug, t);
+      // const forum = await this.getForumDetails(slug, t);
 
-      if (!forum) {
-        return {
-          status: 404,
-          data: {
-            message: `Can't find forum with slug '${slug}'\n`,
-          },
-        };
-      }
+      // if (!forum) {
+      // return {
+      //   status: 404,
+      //   data: {
+      //     message: `Can't find forum with slug '${slug}'\n`,
+      //   },
+      // };
+      // }
 
       getParams.db = t;
 
-      const users = await Users.getUsersByForum(forum, getParams);
+      const users = await Users.getUsersByForum({slug}, getParams);
 
+      if (users.length === 0) {
+        const forum = await this.getForumDetails(slug, t);
+
+        if (!forum) {
+          return {
+            status: 404,
+            data: {
+              message: `Can't find forum with slug '${slug}'\n`,
+            },
+          };
+        }
+      }
       return {
         status: 200,
         data: users || [],

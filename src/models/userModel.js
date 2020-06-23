@@ -172,8 +172,8 @@ module.exports = new class UserModel {
         data =await db.manyOrNone(`
         SELECT about, email, fullname, nickname
         from forum_users 
-        join users  ON nickname = user_nickname
-        where forum_slug = $1 AND user_nickname < $2
+        join users  ON nickname = user_nickname AND user_nickname < $2
+        where forum_slug = $1 
         order by user_nickname DESC
         limit $3
       `, [
@@ -185,8 +185,8 @@ module.exports = new class UserModel {
         data = await db.manyOrNone(`
         SELECT about, email, fullname, nickname
         from forum_users 
-        join users ON nickname = user_nickname
-        where forum_slug = $1 and user_nickname > $2
+        join users ON nickname = user_nickname and user_nickname > $2
+        where forum_slug = $1 
         order by user_nickname ASC
         limit $3
       `, [

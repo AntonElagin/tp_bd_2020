@@ -101,10 +101,10 @@ CREATE INDEX IF NOT EXISTS index_posts_id_created_thread_id ON posts (id, create
 
 CREATE INDEX IF NOT EXISTS index_posts_id
     ON posts (id);
-CREATE INDEX IF NOT EXISTS index_posts_path_thread 
-    ON posts (path, thread);
 CREATE INDEX IF NOT EXISTS index_posts_thread_path 
     ON posts (thread, path);
+CREATE INDEX IF NOT EXISTS index_posts_path_path_GIN 
+    ON posts USING GIN (path) ;
 CREATE INDEX IF NOT EXISTS index_posts_id_path
     ON posts (id, path);
 CREATE INDEX if NOT EXISTS index_posts_thread_id

@@ -1,6 +1,6 @@
 const express = require('express');
-// const logger = require('morgan');
-
+const logger = require('morgan');
+global.postsCount = 0;
 process.env.NODE_ENV = 'production';
 
 const userRouter = require('./routes/userRouter');
@@ -15,7 +15,7 @@ const cluster = require('express-cluster');
 cluster(function(worker) {
   const app = express();
 
-  // app.use(logger('dev'));
+  app.use(logger('dev'));
   app.use(express.json());
 
   app.use('/api/user', userRouter);

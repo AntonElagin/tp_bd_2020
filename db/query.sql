@@ -166,6 +166,8 @@ IF NOT EXISTS forum_users
     CONSTRAINT forums_users_nicknames_pk PRIMARY KEY (forum_slug, user_nickname)
 );
 
+CREATE INDEX if NOT EXISTS index_sorum_users_pk_full
+    ON forum_users (forum_slug, user_nickname) INCLUDE (fullname, about, email);
 
 
 

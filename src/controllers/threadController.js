@@ -1,5 +1,6 @@
 const Threads = require('../models/threadModel');
 const Votes = require('../models/voteModel');
+const Services = require('../models/serviceModel');
 
 const threadTemplate = (val) => {
   return {
@@ -75,6 +76,12 @@ class ThreadController {
 
     if (result.status) {
       return resp.status(result.status).json(result.data);
+    }
+
+    global.postsCount += result.length;
+    if (global.postsCount > 1500000) {
+      global.postsCount = 0;
+      Services.vacuum();
     }
 
     return resp.status(201).json(postsTemplate(result));

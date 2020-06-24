@@ -1,5 +1,8 @@
 const lib = require('fastify');
-const logger = require('morgan');
+const os = require('os');
+const cluster =require('cluster');
+
+const CPUS = os.cpus().length;
 // global.postsCount = [];
 process.env.NODE_ENV = 'production';
 
@@ -10,9 +13,9 @@ const postRouter = require('./routes/postRouter');
 const serviceRouter = require('./routes/serviceRouter');
 
 
-const cluster = require('express-cluster');
+// const cluster = require('express-cluster');
 
-cluster(function(worker) {
+const runCluster = () => {
   const fastify = lib();
 
   fastify.addContentTypeParser('application/json',
@@ -43,4 +46,17 @@ cluster(function(worker) {
         console.log('Forum API server is running on port: ', address);
       },
   );
-}, {respawn: true});
+};
+
+if (cluster.isMaster) {
+  for (let i = 0; i < CPUS; i++) {
+    cluster.fork();
+  }
+} else {
+  runCluster();
+}
+
+
+// cluster(function(worker) {
+//   runCluster();
+// }, {respawn: true});

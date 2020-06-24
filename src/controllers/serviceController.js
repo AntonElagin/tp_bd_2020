@@ -4,7 +4,6 @@ module.exports = class ServiceController {
   static async deleteAll(req, resp) {
     await Service.deleteAll();
 
-    resp.type('text/plain');
     return resp.code(200).send();
   }
 

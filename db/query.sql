@@ -20,10 +20,14 @@ IF NOT EXISTS users
     email       CITEXT      UNIQUE NOT NULL
 );
 
+
 CREATE INDEX if NOT EXISTS index_users_nickname
     ON users (nickname) INCLUDE(fullname, about, email);
 -- CREATE INDEX if NOT EXISTS index_users_full 
 --     ON users (nickname, email, fullname, about);
+
+CLUSTER users USING index_users_nickname;
+
 
 -- Forums table and indexes
 
@@ -68,6 +72,7 @@ IF NOT EXISTS threads
 
 CREATE INDEX if NOT EXISTS index_threads_forum_created
     ON threads (forum, created);
+CLUSTER threads USING index_threads_forum_created;
 CREATE INDEX if NOT EXISTS index_threads_slug_full
     ON threads (slug) INCLUDE (id, author, forum, created, title, message, votes);
 CREATE INDEX if NOT EXISTS index_threads_id_full
@@ -116,6 +121,8 @@ CREATE INDEX if NOT EXISTS index_posts_thread_id
     ON posts (thread, id);
 CREATE INDEX if NOT EXISTS index_posts_thread_created_id
     ON posts (thread, created, id);
+
+CLUSTER posts USING index_posts_thread_id;
 -- CREATE INDEX if NOT EXISTS index_posts_thread_path
 --     ON posts (thread, path);
 -- CREATE INDEX if NOT EXISTS index_posts_path1_id
@@ -163,6 +170,10 @@ IF NOT EXISTS forum_users
     UNIQUE (forum_slug, user_nickname),
     CONSTRAINT forums_users_nicknames_pk PRIMARY KEY (forum_slug, user_nickname)
 );
+
+CREATE INDEX index_forum_users ON forum_users(forum_slug, user_nickname)
+    INCLUDE (fullname, about, email);
+CLUSTER forum_users USING index_forum_users;
 
 
 CREATE OR REPLACE FUNCTION add_path_to_post()

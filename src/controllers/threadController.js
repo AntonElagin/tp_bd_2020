@@ -1,6 +1,6 @@
 const Threads = require('../models/threadModel');
 const Votes = require('../models/voteModel');
-const Services = require('../models/serviceModel');
+// const Services = require('../models/serviceModel');
 
 const threadTemplate = (val) => {
   return {

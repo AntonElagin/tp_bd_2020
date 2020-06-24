@@ -8,7 +8,7 @@ module.exports = new class ThreadModel {
   }
 
   async getThreadPostsTx(slug, id, getParams) {
-    return await this.db.tx(async (t) => {
+    return await this.db.task(async (t) => {
       const thread = await this.getThreadBySlugOrId(slug, id, t);
 
       if (!thread) {

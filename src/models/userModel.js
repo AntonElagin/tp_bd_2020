@@ -6,7 +6,7 @@ module.exports = new class UserModel {
   }
 
   async updateUserTx(nickname = '', userData ={}) {
-    return await this.db.tx(async (t) => {
+    return await this.db.task(async (t) => {
       const userExist = await this.getUserByNickname(nickname, t);
 
       if (!userExist) {
@@ -62,7 +62,7 @@ module.exports = new class UserModel {
   }
 
   async createUserTx(userData) {
-    return await this.db.tx(async (t) => {
+    return await this.db.task(async (t) => {
       const dataExist = await this.getUserByNicknameOrEmail(
           userData.nickname,
           userData.email,

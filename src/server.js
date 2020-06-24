@@ -3,7 +3,7 @@ const os = require('os');
 const cluster =require('cluster');
 
 const CPUS = os.cpus().length;
-// global.postsCount = [];
+
 process.env.NODE_ENV = 'production';
 
 const userRouter = require('./routes/userRouter');
@@ -12,8 +12,6 @@ const threadRouter = require('./routes/threadRouter');
 const postRouter = require('./routes/postRouter');
 const serviceRouter = require('./routes/serviceRouter');
 
-
-// const cluster = require('express-cluster');
 
 const runCluster = () => {
   const fastify = lib();
@@ -55,8 +53,3 @@ if (cluster.isMaster) {
 } else {
   runCluster();
 }
-
-
-// cluster(function(worker) {
-//   runCluster();
-// }, {respawn: true});

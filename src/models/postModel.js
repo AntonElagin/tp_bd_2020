@@ -8,7 +8,7 @@ module.exports = new class PostModel {
   }
 
   async getPostDetailsTx(id, related) {
-    return await this.db.tx(async (t) => {
+    return await this.db.task(async (t) => {
       const post = await this.getPostById(id, t);
 
       if (!post) {

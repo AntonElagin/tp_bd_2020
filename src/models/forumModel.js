@@ -8,7 +8,7 @@ module.exports = new class ForumModel {
   }
 
   async createThreadTx(slug, threadData) {
-    return await this.db.tx(async (t) => {
+    return await this.db.task(async (t) => {
       const user = await Users.getUserByNickname(threadData.author, t);
 
       if (!user) {
@@ -74,7 +74,7 @@ module.exports = new class ForumModel {
   }
 
   async getUsersOfForumTx(slug, getParams) {
-    return await this.db.tx(async (t) => {
+    return await this.db.task(async (t) => {
       getParams.db = t;
 
       const users = await Users.getUsersByForum({slug}, getParams);
@@ -99,7 +99,7 @@ module.exports = new class ForumModel {
   }
 
   async getForumThreadsTx(slug, getParams) {
-    return await this.db.tx(async (t) => {
+    return await this.db.task(async (t) => {
       getParams.db = t;
 
       const forumThreads = await Threads.getForumThreads({slug}, getParams);
@@ -124,7 +124,7 @@ module.exports = new class ForumModel {
   }
 
   async createForumTx(forum) {
-    return await this.db.tx(async (t) => {
+    return await this.db.task(async (t) => {
       const user = await Users.getUserByNickname(forum.user, t);
 
       if (!user) {

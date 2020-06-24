@@ -27,7 +27,7 @@ module.exports = new class ServiceModel {
   }
 
   vacuum() {
-    return this.db.tx(async (t) => {
+    return this.db.task(async (t) => {
       return t.batch([
         t.none('CLUSTER users USING index_users_nickname'),
         t.none('CLUSTER posts USING index_posts_id_path'),

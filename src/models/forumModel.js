@@ -7,8 +7,8 @@ module.exports = new class ForumModel {
     this.db = db;
   }
 
-  createThreadTx(slug, threadData) {
-    return this.db.tx(async (t) => {
+  async createThreadTx(slug, threadData) {
+    return await this.db.tx(async (t) => {
       const user = await Users.getUserByNickname(threadData.author, t);
 
       if (!user) {
@@ -73,8 +73,8 @@ module.exports = new class ForumModel {
     });
   }
 
-  getUsersOfForumTx(slug, getParams) {
-    return this.db.tx(async (t) => {
+  async getUsersOfForumTx(slug, getParams) {
+    return await this.db.tx(async (t) => {
       getParams.db = t;
 
       const users = await Users.getUsersByForum({slug}, getParams);
@@ -98,8 +98,8 @@ module.exports = new class ForumModel {
     });
   }
 
-  getForumThreadsTx(slug, getParams) {
-    return this.db.tx(async (t) => {
+  async getForumThreadsTx(slug, getParams) {
+    return await this.db.tx(async (t) => {
       getParams.db = t;
 
       const forumThreads = await Threads.getForumThreads({slug}, getParams);
@@ -123,8 +123,8 @@ module.exports = new class ForumModel {
     });
   }
 
-  createForumTx(forum) {
-    return this.db.tx(async (t) => {
+  async createForumTx(forum) {
+    return await this.db.tx(async (t) => {
       const user = await Users.getUserByNickname(forum.user, t);
 
       if (!user) {
@@ -154,8 +154,8 @@ module.exports = new class ForumModel {
     });
   }
 
-  createForum(forumData = {}, userData = {}, db = this.db) {
-    return db.one(`INSERT INTO
+  async createForum(forumData = {}, userData = {}, db = this.db) {
+    return await db.one(`INSERT INTO
       forums (slug, title, author)
        VALUES ($1, $2, $3)
        RETURNING *`, [
@@ -165,8 +165,8 @@ module.exports = new class ForumModel {
     ]);
   }
 
-  getForumDetails(forumSlug = '', db = this.db) {
-    return db.oneOrNone(`Select * 
+  async getForumDetails(forumSlug = '', db = this.db) {
+    return await db.oneOrNone(`Select * 
       from forums
       where slug = $1`, [
       forumSlug,

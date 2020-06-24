@@ -9,20 +9,20 @@ class ForumController {
     switch (result.status) {
       case 409:
         const forum = result.data;
-        return resp.status(409).json({
+        return resp.code(409).send({
           slug: forum.slug,
           title: forum.title,
           user: forum.author,
         });
       case 201:
         const createdForum = result.data;
-        return resp.status(201).json({
+        return resp.code(201).send({
           slug: createdForum.slug,
           title: createdForum.title,
           user: createdForum.author,
         });
       default:
-        return resp.status(result.status).json(result.data);
+        return resp.code(result.status).send(result.data);
     }
   }
 
@@ -31,12 +31,12 @@ class ForumController {
 
     const forumExist = await Forums.getForumDetails(slug);
     if (!forumExist) {
-      return res.status(404).json({
+      return res.code(404).send({
         message: `Can\'t find forum with slug '${slug}'\n`,
       });
     }
 
-    res.json({
+    res.send({
       slug: forumExist.slug,
       title: forumExist.title,
       user: forumExist.author,
@@ -57,7 +57,7 @@ class ForumController {
       case 201:
         result.data.id = Number(result.data.id);
       default:
-        return resp.status(result.status).json(result.data);
+        return resp.code(result.status).send(result.data);
     }
   }
 
@@ -70,14 +70,14 @@ class ForumController {
 
     const result = await Forums.getForumThreadsTx(slug, getParams);
     if (result.status === 200) {
-      return resp.status(200).json(result.data.map((elem) => {
+      return resp.code(200).send(result.data.map((elem) => {
         elem.id = +elem.id;
         elem.votes = +elem.votes;
         return elem;
       }));
     }
 
-    return resp.status(result.status).json(result.data);
+    return resp.code(result.status).send(result.data);
   }
 
   static async getUsersOfForum(req, resp) {
@@ -87,7 +87,7 @@ class ForumController {
 
     const result = await Forums.getUsersOfForumTx(slug, getParams);
 
-    return resp.status(result.status).json(result.data);
+    return resp.code(result.status).send(result.data);
   }
 }
 

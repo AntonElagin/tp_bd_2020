@@ -1,4 +1,4 @@
-const express = require('express');
+const lib = require('fastify');
 const logger = require('morgan');
 // global.postsCount = [];
 process.env.NODE_ENV = 'production';
@@ -12,21 +12,37 @@ const serviceRouter = require('./routes/serviceRouter');
 
 const cluster = require('express-cluster');
 
-cluster(function(worker) {
-  const app = express();
+// cluster(function(worker) {
+const fastify = lib({
+  logger: true,
+});
 
-  app.use(logger('dev'));
-  app.use(express.json());
+fastify.addContentTypeParser('application/json',
+    {parseAs: 'string'}, function(req, body, done) {
+      try {
+        if (body) {
+          const json = JSON.parse(body);
+          done(null, json);
+        } else {
+          done(null, {});
+        }
+      } catch (err) {
+        err.statusCode = 400;
+        done(err, undefined);
+      }
+    });
+fastify.register(userRouter, {prefix: '/api/user'});
+fastify.register(forumRouter, {prefix: '/api/forum'});
+fastify.register(threadRouter, {prefix: '/api/thread'});
+fastify.register(postRouter, {prefix: '/api/post'});
+fastify.register(serviceRouter, {prefix: '/api/service'});
 
-  app.use('/api/user', userRouter);
-  app.use('/api/forum', forumRouter);
-  app.use('/api/thread', threadRouter);
-  app.use('/api/post', postRouter);
-  app.use('/api/service', serviceRouter);
-
-  const port = process.env.PORT || 5000;
-  return app.listen(
-      port,
-      () => console.log('Forum API server is running on port: ', port),
-  );
-}, {respawn: false});
+const port = process.env.PORT || 5000;
+return fastify.listen(
+    port, '0.0.0.0',
+    (err, address) => {
+      if (err) throw err;
+      console.log('Forum API server is running on port: ', address);
+    },
+);
+// }, {respawn: true});

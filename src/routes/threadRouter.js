@@ -1,18 +1,14 @@
-const express = require('express');
-const asyncHandler = require('express-async-handler');
-const threadRouter = express.Router();
 const ThreadController = require('../controllers/threadController');
 
-threadRouter.post('/:key/create', asyncHandler(ThreadController.createPost));
+module.exports = function(fastify, opts, done) {
+  fastify.post('/:key/create', ThreadController.createPost);
 
-threadRouter.get('/:key/details', asyncHandler(ThreadController.getThreadInfo));
+  fastify.get('/:key/details', ThreadController.getThreadInfo);
 
-threadRouter.post('/:key/details', asyncHandler(ThreadController.updateThread));
+  fastify.post('/:key/details', ThreadController.updateThread);
 
-threadRouter.get('/:key/posts', asyncHandler(ThreadController.getThreadPosts));
+  fastify.get('/:key/posts', ThreadController.getThreadPosts);
 
-threadRouter.post('/:key/vote', asyncHandler(ThreadController.vote));
-
-module.exports = threadRouter;
-
-
+  fastify.post('/:key/vote', ThreadController.vote);
+  done();
+};

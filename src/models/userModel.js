@@ -5,8 +5,8 @@ module.exports = new class UserModel {
     this.db = db;
   }
 
-  updateUserTx(nickname = '', userData ={}) {
-    return this.db.tx(async (t) => {
+  async updateUserTx(nickname = '', userData ={}) {
+    return await this.db.tx(async (t) => {
       const userExist = await this.getUserByNickname(nickname, t);
 
       if (!userExist) {
@@ -61,8 +61,8 @@ module.exports = new class UserModel {
         });
   }
 
-  createUserTx(userData) {
-    return this.db.tx(async (t) => {
+  async createUserTx(userData) {
+    return await this.db.tx(async (t) => {
       const dataExist = await this.getUserByNicknameOrEmail(
           userData.nickname,
           userData.email,
@@ -91,8 +91,8 @@ module.exports = new class UserModel {
     });
   }
 
-  createUser(nickname, about, email, fullname, db = this.db) {
-    return db.one(`
+  async createUser(nickname, about, email, fullname, db = this.db) {
+    return await db.one(`
     INSERT INTO users
     (nickname, email, about, fullname)
     VALUES ($1, $2, $3, $4)
@@ -105,8 +105,8 @@ module.exports = new class UserModel {
     ]);
   }
 
-  getUserByNickname(nickname = '', db = this.db) {
-    return db.oneOrNone(`
+  async getUserByNickname(nickname = '', db = this.db) {
+    return await db.oneOrNone(`
       Select * from users
       where nickname = $1
     `, [
@@ -114,7 +114,7 @@ module.exports = new class UserModel {
     ]);
   }
 
-  updateUserProfile(nickname = '', userData = {}, db = this.db) {
+  async updateUserProfile(nickname = '', userData = {}, db = this.db) {
     const condition = pgp.as.format(
         ' WHERE nickname = $1 Returning *',
         [
@@ -123,11 +123,11 @@ module.exports = new class UserModel {
     );
     const updateUserQuery = pgp.helpers
         .update(userData, null, 'users') + condition;
-    return db.one(updateUserQuery);
+    return await db.one(updateUserQuery);
   }
 
-  getUserByNicknameOrEmail(nickname = '', email = '', db = this.db) {
-    return db.manyOrNone(`
+  async getUserByNicknameOrEmail(nickname = '', email = '', db = this.db) {
+    return await db.manyOrNone(`
     SELECT * 
     FROM users
     WHERE nickname = $1 OR email = $2;
@@ -137,7 +137,7 @@ module.exports = new class UserModel {
     ]);
   }
 
-  getUsersByForum(forum = {},
+  async getUsersByForum(forum = {},
       {
         limit = 1000,
         since = '',
@@ -184,6 +184,6 @@ module.exports = new class UserModel {
            +limit]);
     }
 
-    return data;
+    return await data;
   }
 };

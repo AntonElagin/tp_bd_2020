@@ -6,9 +6,9 @@ class UserController {
     const result = await Users.getUserByNickname(nickname);
 
     if (result) {
-      return resp.status(200).json(result);
+      return resp.code(200).send(result);
     }
-    return resp.status(404).json({
+    return resp.code(404).send({
       message: `Can't find user with nickname '${nickname}'\n`,
     });
   }
@@ -21,7 +21,7 @@ class UserController {
 
     const result = await Users.createUserTx(userData);
 
-    return resp.status(result.status).json(result.user);
+    return resp.code(result.status).send(result.user);
   }
 
   static async updateUser(req, resp) {
@@ -30,7 +30,7 @@ class UserController {
 
     const result = await Users.updateUserTx(nickname, userData);
 
-    return resp.status(result.status).json(result.data);
+    return resp.code(result.status).send(result.data);
   }
 }
 

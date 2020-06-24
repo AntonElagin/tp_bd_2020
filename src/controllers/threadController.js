@@ -51,12 +51,12 @@ class ThreadController {
 
 
     if (!thread) {
-      return resp.status(404).json({
+      return resp.code(404).send({
         message: `Can't find thread with slug or id '${slug || id}'\n`,
       });
     }
     const data = threadTemplate(thread);
-    return resp.status(200).send(data);
+    return resp.code(200).send(data);
   }
 
   static async createPost(req, resp) {
@@ -75,7 +75,7 @@ class ThreadController {
 
 
     if (result.status) {
-      return resp.status(result.status).json(result.data);
+      return resp.code(result.status).send(result.data);
     }
 
     // global.postsCount += result.length;
@@ -87,7 +87,7 @@ class ThreadController {
     //   Services.vacuum();
     // }
 
-    return resp.status(201).json(postsTemplate(result));
+    return resp.code(201).send(postsTemplate(result));
   }
 
   static async updateThread(req, resp) {
@@ -107,14 +107,14 @@ class ThreadController {
     const threadExist = await Threads.getThreadBySlugOrId(slug, id);
 
     if (!threadExist) {
-      return resp.status(404).json({
+      return resp.code(404).send({
         message: `Can't find thread with slug or id '${slug || id}'`,
       });
     }
 
 
     if (Object.keys(thread).length === 0) {
-      return resp.status(200).json(threadTemplate(threadExist));
+      return resp.code(200).send(threadTemplate(threadExist));
     }
 
     const updatedThread = await Threads.updateThread(
@@ -122,17 +122,17 @@ class ThreadController {
         thread);
 
     if (updatedThread) {
-      return resp.status(200).json(threadTemplate(updatedThread));
+      return resp.code(200).send(threadTemplate(updatedThread));
     }
 
-    return resp.status(500).end();
+    return resp.code(500).end();
   }
 
 
   static async vote(req, resp) {
     const vote = req.body;
     if (!((vote.voice === -1) || (vote.voice === 1))) {
-      return resp.status(400).end();
+      return resp.code(400).end();
     }
 
     let id;
@@ -155,11 +155,11 @@ class ThreadController {
 
     switch (result.status) {
       case 404:
-        return resp.status(404).json(result.data);
+        return resp.code(404).send(result.data);
       case 200:
-        return resp.status(200).json(threadTemplate(result.data));
+        return resp.code(200).send(threadTemplate(result.data));
       case 500:
-        return resp.status(500).end();
+        return resp.code(500).end();
     }
   }
 
@@ -178,7 +178,7 @@ class ThreadController {
 
     const result = await Threads.getThreadPostsTx(slug, id, getParams);
 
-    return resp.status(result.status).json(result.data);
+    return resp.code(result.status).send(result.data);
   }
 }
 

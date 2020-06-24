@@ -9,13 +9,13 @@ class PostController {
     const postExist = await Posts.getPostById(id);
 
     if (!postExist) {
-      return resp.status(404).json({
+      return resp.code(404).send({
         message: `Can't find post with id ${id}`,
       });
     }
 
     if (!message) {
-      return resp.status(200).json({
+      return resp.code(200).send({
         author: postExist.author,
         created: postExist.created,
         forum: postExist.forum,
@@ -30,9 +30,9 @@ class PostController {
     if (updatedPost) {
       updatedPost.id = +updatedPost.id;
       updatedPost.thread = +updatedPost.thread;
-      return resp.status(200).json(updatedPost);
+      return resp.code(200).send(updatedPost);
     }
-    return resp.status(200).json({
+    return resp.code(200).send({
       author: postExist.author,
       created: postExist.created,
       forum: postExist.forum,
@@ -40,7 +40,7 @@ class PostController {
       message: postExist.message,
       thread: +postExist.thread,
     });
-    // return resp.status(500).end();
+    // return resp.code(500).end();
   }
 
   static async getPostDetails(req, resp) {
@@ -51,7 +51,7 @@ class PostController {
     const result = await Posts.getPostDetailsTx(id, related);
 
     if (result.status) {
-      return resp.status(result.status).json(result.data);
+      return resp.code(result.status).send(result.data);
     }
 
 
@@ -74,7 +74,7 @@ class PostController {
       returnO[arr[i]] = result[i];
     }
 
-    return resp.status(200).json(returnO);
+    return resp.code(200).send(returnO);
   }
 }
 

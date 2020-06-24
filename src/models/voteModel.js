@@ -6,8 +6,8 @@ module.exports = new class PostModel {
     this.db = db;
   }
 
-  createOrUpdateVote(nickname, threadSlug, threadId, voice) {
-    return this.db.task(async (t) => {
+  async createOrUpdateVote(nickname, threadSlug, threadId, voice) {
+    return await this.db.task(async (t) => {
       const user = await t.oneOrNone(`
         Select nickname from users
         where nickname = $1;

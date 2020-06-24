@@ -7,8 +7,8 @@ module.exports = new class PostModel {
     this.db = db;
   }
 
-  getPostDetailsTx(id, related) {
-    return this.db.tx(async (t) => {
+  async getPostDetailsTx(id, related) {
+    return await this.db.tx(async (t) => {
       const post = await this.getPostById(id, t);
 
       if (!post) {
@@ -72,16 +72,16 @@ module.exports = new class PostModel {
     });
   }
 
-  getForumDetails(forumSlug = '', db = this.db) {
-    return db.oneOrNone(`Select * 
+  async getForumDetails(forumSlug = '', db = this.db) {
+    return await db.oneOrNone(`Select * 
       from forums
       where slug = $1`, [
       forumSlug,
     ]);
   }
 
-  getThreadById(id = -1, db = this.db) {
-    return db.oneOrNone(`
+  async getThreadById(id = -1, db = this.db) {
+    return await db.oneOrNone(`
     Select * from threads
     where id = $1;
     `,
@@ -90,8 +90,8 @@ module.exports = new class PostModel {
     ]);
   }
 
-  createPost(post, db = this.db) {
-    return db.one(`
+  async createPost(post, db = this.db) {
+    return await db.one(`
       INSERT INTO posts (author, forum, thread,
         created, message, parent)
       VALUES ($1, $2, $3, $4, $5, $6)
@@ -107,15 +107,15 @@ module.exports = new class PostModel {
   }
 
 
-  getPostById(id, db = this.db) {
-    return db.oneOrNone(`
+  async getPostById(id, db = this.db) {
+    return await db.oneOrNone(`
         SELECT * from posts
         where id = $1
       `, [id]);
   }
 
-  updatePostMessage(id = -1, message = '') {
-    return this.db.oneOrNone(`
+  async updatePostMessage(id = -1, message = '') {
+    return await this.db.oneOrNone(`
         Update posts 
         set message = $1 , isedited = true 
         where id = $2 and message <> $1
@@ -129,13 +129,13 @@ module.exports = new class PostModel {
     ]);
   }
 
-  getPostsbytThreadWithFlatSort(threadId, {
+  async getPostsbytThreadWithFlatSort(threadId, {
     limit = 1000,
     desc = false,
     since = null,
     db = this.db,
   } = {}) {
-    return db.manyOrNone(`
+    return await db.manyOrNone(`
       SELECT * FROM posts
        WHERE thread = $1 
        $2:raw
@@ -148,7 +148,7 @@ module.exports = new class PostModel {
     ]);
   }
 
-  getPostsbytThreadWithTreeSort(threadId, {
+  async getPostsbytThreadWithTreeSort(threadId, {
     limit = 1000,
     desc = false,
     since = null,
@@ -171,7 +171,7 @@ module.exports = new class PostModel {
         ]);
       }
     }
-    return db.manyOrNone(`
+    return await db.manyOrNone(`
         SELECT * FROM posts
         WHERE thread = $1 $2:raw
         ORDER BY path $3:raw 
@@ -183,7 +183,7 @@ module.exports = new class PostModel {
     ]);
   }
 
-  getPostsbytThreadWithTreeWithParentSort(threadId, {
+  async getPostsbytThreadWithTreeWithParentSort(threadId, {
     limit = 1000,
     desc = false,
     since = null,
@@ -209,7 +209,7 @@ module.exports = new class PostModel {
          WHERE parent IS NULL 
         AND thread = $1  `, [threadId]);
     }
-    return db.manyOrNone(`
+    return await db.manyOrNone(`
           SELECT * FROM posts JOIN
           (SELECT id AS sub_parent_id 
             FROM posts $1:raw ORDER BY id $5:raw LIMIT $4 ) AS sub 

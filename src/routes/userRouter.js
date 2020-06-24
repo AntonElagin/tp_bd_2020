@@ -1,12 +1,11 @@
-const express = require('express');
-const asyncHandler = require('express-async-handler');
-const userRoutes = express.Router();
 const UserController = require('../controllers/userController');
 
-userRoutes.get('/:nickname/profile', asyncHandler(UserController.getUser));
 
-userRoutes.post('/:nickname/profile', asyncHandler(UserController.updateUser));
+module.exports = function(fastify, opts, done) {
+  fastify.get('/:nickname/profile', UserController.getUser);
 
-userRoutes.post('/:nickname/create', asyncHandler(UserController.createUser));
+  fastify.post('/:nickname/profile', UserController.updateUser);
 
-module.exports = userRoutes;
+  fastify.post('/:nickname/create', UserController.createUser);
+  done();
+};

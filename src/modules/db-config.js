@@ -1,18 +1,18 @@
 const Promise = require('bluebird');
-Promise.config({
-  // Enable warnings
-  warnings: false,
-  // Enable long stack traces
-  longStackTraces: false,
-  // Enable cancellation
-  cancellation: false,
-  // Enable monitoring
-  monitoring: false,
-  // Enable async hooks
-  asyncHooks: true,
-});
+// Promise.config({
+//   // Enable warnings
+//   warnings: false,
+//   // Enable long stack traces
+//   longStackTraces: false,
+//   // Enable cancellation
+//   cancellation: false,
+//   // Enable monitoring
+//   monitoring: false,
+//   // Enable async hooks
+//   asyncHooks: true,
+// });
 const pgp = require('pg-promise')({
-  // promiseLib: Promise,
+  promiseLib: Promise,
 });
 
 // Database connection details;
